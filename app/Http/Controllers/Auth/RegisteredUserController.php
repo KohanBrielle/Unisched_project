@@ -62,9 +62,9 @@ class RegisteredUserController extends Controller
             'user_id' => $user->id,
         ]);
 
-        $qrCode = QrCode::format('png')->size(200)->generate($qrData);
+        $qrCode = QrCode::format('svg')->size(200)->generate($qrData);
 
-        $fileName = 'qr_' . $user->student_id . '.png';
+        $fileName = 'qr_' . $user->student_id . '.svg';
         $path = public_path('qrcodes/' . $fileName);
 
         if (!file_exists(public_path('qrcodes'))) {

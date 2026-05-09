@@ -30,6 +30,9 @@
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
+                            @if(Auth::user()->profile_picture)
+                                <img src="{{ asset('profile_pictures/' . Auth::user()->profile_picture) }}" alt="{{ Auth::user()->name }}" class="w-6 h-6 rounded-full mr-2 object-cover">
+                            @endif
                             <div>{{ Auth::user()->name }}</div>
 
                             <div class="ms-1">
@@ -78,7 +81,7 @@
                 <button type="button" onclick="toggleQrModal()" class="text-gray-500 hover:text-gray-900">×</button>
             </div>
             @php
-                $qrPath = 'qrcodes/qr_' . Auth::user()->student_id . '.png';
+                $qrPath = 'qrcodes/qr_' . Auth::user()->student_id . '.svg';
                 $qrUrl = file_exists(public_path($qrPath)) ? asset($qrPath) : null;
             @endphp
             @if($qrUrl)

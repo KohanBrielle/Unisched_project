@@ -29,4 +29,48 @@ class Reservation extends Model
     {
         return $this->belongsTo(Facility::class);
     }
+
+    /**
+     * Check if the reservation can be cancelled
+     */
+    public function canBeCancelled(): bool
+    {
+        // Can't cancel if already started (within 30 minutes of start time)
+        if ($this->start_time->copy()->subMinutes(30)->isPast()) {
+            return false;
+        }
+
+        // Can only cancel pending or approved reservations
+        return in_array($this->status, ['pending', 'approved']);
+    }
+
+    /**
+     * Cancel the reservation
+     */
+    public function cancel(): bool
+    {
+        if (!$this->canBeCancelled()) {
+            return false;
+        }
+
+        $this->status = 'cancelled';
+        return $this->save();
+    }
+
+    /**
+     * Scope for active reservations
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'approved')
+                    ->where('end_time', '>', now());
+    }
+
+    /**
+     * Scope for pending reservations
+     */
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
 }

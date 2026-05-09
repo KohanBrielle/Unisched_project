@@ -29,3 +29,74 @@ document.addEventListener('DOMContentLoaded', () => {
         circlePath.style.strokeDashoffset = offset;
     });
 });
+
+// Function to cancel a reservation
+function cancelReservation(reservationId) {
+    if (!confirm('Are you sure you want to cancel this reservation?')) {
+        return;
+    }
+
+    fetch(`/reservations/${reservationId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.error || 'Failed to cancel reservation');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.message) {
+            alert(data.message);
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert(error.message || 'An error occurred while cancelling the reservation.');
+    });
+}
+
+// Function to return equipment
+function returnEquipment(borrowingId) {
+    if (!confirm('Are you sure you want to return this equipment?')) {
+        return;
+    }
+
+    fetch(`/borrowings/${borrowingId}/request-return`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+                try {
+                    const data = JSON.parse(text);
+                    throw new Error(data.error || 'Failed to return equipment');
+                } catch (e) {
+                    throw new Error('Server error: ' + response.status);
+                }
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.message) {
+            alert(data.message);
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert(error.message || 'An error occurred while returning the equipment.');
+    });
+}

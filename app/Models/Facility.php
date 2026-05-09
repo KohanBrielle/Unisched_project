@@ -13,6 +13,12 @@ class Facility extends Model
         'capacity',
         'is_borrowable',
         'current_occupancy',
+        'status',
+        'status_overridden',
+    ];
+
+    protected $casts = [
+        'status_overridden' => 'boolean',
     ];
 
     public function attendanceLogs(): HasMany

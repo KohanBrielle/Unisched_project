@@ -39,7 +39,11 @@
                 <div class="user-profile">
                     <span class="year-badge">2026 A.Y.</span>
                     <a href="{{ route('profile.edit') }}" class="avatar-link">
-                        <img src="https://via.placeholder.com/48" alt="Profile" class="avatar">
+                        @if(auth()->user()->profile_picture)
+                            <img src="{{ asset('profile_pictures/' . auth()->user()->profile_picture) }}" alt="Profile" class="avatar">
+                        @else
+                            <img src="https://via.placeholder.com/48" alt="Profile" class="avatar">
+                        @endif
                     </a>
                     <div class="user-actions">
                         <a href="{{ route('profile.edit') }}">Profile</a>
@@ -99,25 +103,59 @@
     </div>
     <script src="{{ asset('js/dashboard_enhanced.js') }}"></script>
     <script>
+        // Clean up expired reservations on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('{{ route('reservations.cleanup') }}', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => {
+                if (response.ok) {
+                    console.log('Expired reservations cleaned up');
+                }
+            }).catch(error => {
+                console.error('Error cleaning up expired reservations:', error);
+            });
+        });
+    </script>
+    <script>
         document.getElementById('reservation-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
             fetch('/reservations', {
                 method: 'POST',
                 headers: {
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 },
                 body: formData
             })
             .then(async response => {
-                const data = await response.json();
-                document.getElementById('reservation-result').innerText = data.message || data.error;
+                let data = {};
+                try {
+                    data = await response.json();
+                } catch (error) {
+                    console.error('Failed to parse JSON response:', error);
+                    document.getElementById('reservation-result').innerText = 'Unable to submit reservation at this time.';
+                    document.getElementById('reservation-result').style.color = '#b32f2d';
+                    return;
+                }
+
+                document.getElementById('reservation-result').innerText = data.message || data.error || 'Unexpected response.';
                 if (response.ok) {
                     document.getElementById('reservation-result').style.color = '#2f7b55';
                     setTimeout(() => window.location.reload(), 1200);
                 } else {
                     document.getElementById('reservation-result').style.color = '#b32f2d';
                 }
+            })
+            .catch(error => {
+                console.error('Reservation submit failed:', error);
+                document.getElementById('reservation-result').innerText = 'Unable to submit reservation. Please try again.';
+                document.getElementById('reservation-result').style.color = '#b32f2d';
             });
         });
     </script>

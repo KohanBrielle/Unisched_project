@@ -18,9 +18,9 @@ class ProfileController extends Controller
     {
         $user = $request->user();
         $reservations = $user->reservations()->with('facility')->latest()->get();
-        $pendingReservations = $reservations->where('status', 'pending');
+        $pendingReservations = $user->reservations()->with('facility')->where('status', 'pending')->get();
 
-        $qrFile = 'qrcodes/qr_' . $user->student_id . '.png';
+        $qrFile = 'qrcodes/qr_' . $user->student_id . '.svg';
         $qrUrl = file_exists(public_path($qrFile)) ? asset($qrFile) : null;
 
         return view('profile.edit', [
@@ -36,13 +36,33 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $user->fill($request->validated());
 
         if ($request->user()->isDirty('email')) {
             $request->user()->email_verified_at = null;
         }
 
-        $request->user()->save();
+        // Handle profile picture upload
+        if ($request->hasFile('profile_picture')) {
+            $request->validate([
+                'profile_picture' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            ]);
+
+            // Delete old profile picture if exists
+            if ($user->profile_picture && file_exists(public_path('profile_pictures/' . $user->profile_picture))) {
+                unlink(public_path('profile_pictures/' . $user->profile_picture));
+            }
+
+            // Store new profile picture
+            $file = $request->file('profile_picture');
+            $filename = 'profile_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('profile_pictures'), $filename);
+
+            $user->profile_picture = $filename;
+        }
+
+        $user->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
