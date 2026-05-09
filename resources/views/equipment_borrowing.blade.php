@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>My UNISched | Equipment Borrowing</title>
     <link rel="stylesheet" href="{{ asset('css/dashboard_enhanced.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -39,7 +40,11 @@
                 <div class="user-profile">
                     <span class="year-badge">2026 A.Y.</span>
                     <a href="{{ route('profile.edit') }}" class="avatar-link">
-                        <img src="https://via.placeholder.com/48" alt="Profile" class="avatar">
+                        @if(auth()->user()->profile_picture)
+                            <img src="{{ asset('profile_pictures/' . auth()->user()->profile_picture) }}" alt="Profile" class="avatar">
+                        @else
+                            <img src="https://via.placeholder.com/48" alt="Profile" class="avatar">
+                        @endif
                     </a>
                     <div class="user-actions">
                         <a href="{{ route('profile.edit') }}">Profile</a>
@@ -66,7 +71,8 @@
 
                 <div class="widget">
                     <div class="widget-header">Borrow Equipment</div>
-                    <form id="borrow-form">
+                    <form id="borrow-form" action="{{ route('borrowings.store') }}" method="POST">
+                        @csrf
                         <label>Equipment</label>
                         <select name="equipment" required>
                             @foreach($equipmentOptions as $equipment)
@@ -75,7 +81,7 @@
                         </select>
 
                         <label>Return Date</label>
-                        <input type="date" name="return_date" required>
+                        <input type="date" name="return_date" required min="{{ now()->addDay()->format('Y-m-d') }}">
                         <button type="submit" class="btn">Borrow</button>
                     </form>
                     <div id="borrow-result" class="empty-state" style="margin-top: 16px;"></div>
@@ -84,13 +90,24 @@
                 <div class="widget">
                     <div class="widget-header">My Borrowed Equipment</div>
                     @if($userBorrowed->isEmpty())
-                        <p class="empty-state">You currently have no borrowed items.</p>
+                        <p class="empty-state">You currently have no borrowed items or pending requests.</p>
                     @else
                         <ul class="list-clean">
                             @foreach($userBorrowed as $item)
                                 <li>
                                     <div class="item-title">{{ $item->equipment_name }}</div>
-                                    <p class="item-subtitle">Return by {{ $item->return_date->format('M d, Y') }}</p>
+                                    <p class="item-subtitle">
+                                        @if(!$item->is_approved)
+                                            Pending admin approval until {{ $item->return_date->format('M d, Y') }}
+                                        @else
+                                            Return by {{ $item->return_date->format('M d, Y') }}
+                                        @endif
+                                    </p>
+                                    @if($item->is_approved && !$item->return_requested)
+                                        <button class="btn request-return-btn" type="button" onclick="requestReturn({{ $item->id }})">Request Return</button>
+                                    @elseif($item->is_approved && $item->return_requested)
+                                        <button class="btn" type="button" disabled>Return Requested</button>
+                                    @endif
                                 </li>
                             @endforeach
                         </ul>
@@ -103,16 +120,26 @@
     <script>
         document.getElementById('borrow-form').addEventListener('submit', function(e) {
             e.preventDefault();
-            const formData = new FormData(this);
-            fetch('/borrowings', {
+            const form = this;
+            const formData = new FormData(form);
+            const payload = new URLSearchParams(formData);
+
+            fetch(form.action, {
                 method: 'POST',
                 headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 },
-                body: formData
+                body: payload.toString()
             })
             .then(async response => {
-                const data = await response.json();
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    throw new Error('Server returned an error: ' + response.status);
+                }
                 document.getElementById('borrow-result').innerText = data.message || data.error;
                 if (response.ok) {
                     document.getElementById('borrow-result').style.color = '#2f7b55';
@@ -120,8 +147,41 @@
                 } else {
                     document.getElementById('borrow-result').style.color = '#b32f2d';
                 }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('borrow-result').innerText = 'Unable to submit borrow request. Please try again.';
+                document.getElementById('borrow-result').style.color = '#b32f2d';
             });
         });
+
+        function requestReturn(borrowingId) {
+            if (!confirm('Request return approval from an admin?')) {
+                return;
+            }
+
+            fetch('/borrowings/' + borrowingId + '/request-return', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            })
+            .then(async response => {
+                const data = await response.json();
+                document.getElementById('borrow-result').innerText = data.message || data.error;
+                document.getElementById('borrow-result').style.color = response.ok ? '#2f7b55' : '#b32f2d';
+                if (response.ok) {
+                    setTimeout(() => window.location.reload(), 1200);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('borrow-result').innerText = 'Unable to send return request. Please try again.';
+                document.getElementById('borrow-result').style.color = '#b32f2d';
+            });
+        }
     </script>
 </body>
 </html>

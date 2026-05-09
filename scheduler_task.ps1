@@ -1,0 +1,1 @@
+Start-Process -FilePath "C:\php-8.5.5\php.exe" -ArgumentList "c:\Users\CRIZ JUDE\group_2\Unisched_project\artisan schedule:run" -WorkingDirectory "c:\Users\CRIZ JUDE\group_2\Unisched_project" -WindowStyle Hidden -NoNewWindow -Wait

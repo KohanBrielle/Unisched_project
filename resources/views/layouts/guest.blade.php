@@ -12,6 +12,7 @@
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
         <!-- Styles -->
+        <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/dist/tailwind.min.css" rel="stylesheet">
         <link rel="stylesheet" href="{{ asset('css/dashboard_enhanced.css') }}">
         <script src="{{ asset('js/Group2_js.js') }}" defer></script>
     </head>

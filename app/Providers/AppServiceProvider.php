@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use Illuminate\Contracts\Console\Kernel as ConsoleKernel;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider

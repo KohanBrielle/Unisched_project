@@ -136,7 +136,11 @@
                 <div class="user-profile">
                     <span class="year-badge">2026 A.Y.</span>
                     <a href="{{ route('profile.edit') }}" class="avatar-link">
-                        <img src="https://via.placeholder.com/48" alt="Profile" class="avatar">
+                        @if(auth()->user()->profile_picture)
+                            <img src="{{ asset('profile_pictures/' . auth()->user()->profile_picture) }}" alt="Profile" class="avatar">
+                        @else
+                            <img src="https://via.placeholder.com/48" alt="Profile" class="avatar">
+                        @endif
                     </a>
                     <div class="user-actions">
                         <a href="{{ route('profile.edit') }}">Profile</a>
@@ -191,16 +195,19 @@
         </main>
     </div>
 
+    @php
+        $calendarReservations = $facility->reservations()->where('status', 'approved')->get()->map(function ($r) {
+            return [
+                'start' => optional($r->start_time)->format('Y-m-d'),
+                'end' => optional($r->end_time)->format('Y-m-d'),
+                'user' => optional($r->user)->name ?? 'Unknown',
+                'time' => ($r->start_time && $r->end_time) ? $r->start_time->format('H:i') . ' - ' . $r->end_time->format('H:i') : 'N/A',
+            ];
+        })->toArray();
+    @endphp
     <script>
         let currentDate = new Date();
-        const reservations = {!! json_encode($facility->reservations()->where('status', 'approved')->get()->map(function ($r) {
-            return [
-                'start' => $r->start_time->format('Y-m-d'),
-                'end' => $r->end_time->format('Y-m-d'),
-                'user' => $r->user->name,
-                'time' => $r->start_time->format('H:i') + ' - ' + $r->end_time->format('H:i'),
-            ];
-        })) !!};
+        const reservations = @json($calendarReservations);
 
         const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 

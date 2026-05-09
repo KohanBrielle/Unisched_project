@@ -6,6 +6,36 @@
     <title>My UNISched | System Admin</title>
     <link rel="stylesheet" href="{{ asset('css/dashboard_enhanced.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .user-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .user-actions a,
+        .user-actions button {
+            background: rgba(255, 255, 255, 0.12);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 999px;
+            text-decoration: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s ease;
+        }
+
+        .user-actions a:hover,
+        .user-actions button:hover {
+            background: rgba(255, 255, 255, 0.24);
+        }
+
+        .profile-btn {
+            background: rgba(255,255,255,0.2);
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -40,10 +70,14 @@
                 <div class="user-profile">
                     <span class="year-badge">2026 A.Y. <i class="fas fa-chevron-right"></i></span>
                     <a href="{{ route('profile.edit') }}" class="avatar-link">
-                        <img src="https://via.placeholder.com/40" alt="Profile" class="avatar">
+                        @if(auth()->user()->profile_picture)
+                            <img src="{{ asset('profile_pictures/' . auth()->user()->profile_picture) }}" alt="Profile" class="avatar">
+                        @else
+                            <img src="https://via.placeholder.com/40" alt="Profile" class="avatar">
+                        @endif
                     </a>
                     <div class="user-actions">
-                        <a href="{{ route('profile.edit') }}">Profile</a>
+                        <a href="{{ route('profile.edit') }}" class="profile-btn">Profile</a>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <button type="submit">Log Out</button>

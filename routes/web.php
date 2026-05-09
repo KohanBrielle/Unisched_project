@@ -58,6 +58,51 @@ Route::middleware(['auth', 'verified', 'nocache'])->group(function () {
         return view('activity_reservation', compact('facility'));
     })->name('activity.reservation');
 
+    Route::post('/reservations', function (Request $request) {
+        $request->validate([
+            'facility_id' => 'required|exists:facilities,id',
+            'start_time' => 'required|date|after:now',
+            'end_time' => 'required|date|after:start_time',
+        ]);
+
+        $facility = Facility::findOrFail($request->facility_id);
+
+        // Check for time conflicts
+        $conflict = Reservation::where('facility_id', $request->facility_id)
+            ->where('status', 'approved')
+            ->where(function ($query) use ($request) {
+                $query->whereBetween('start_time', [$request->start_time, $request->end_time])
+                    ->orWhereBetween('end_time', [$request->start_time, $request->end_time])
+                    ->orWhere(function ($inner) use ($request) {
+                        $inner->where('start_time', '<', $request->start_time)
+                              ->where('end_time', '>', $request->end_time);
+                    });
+            })
+            ->exists();
+
+        if ($conflict) {
+            return response()->json(['error' => 'This reservation conflicts with an existing approved booking.'], 422);
+        }
+
+        $startTime = strtotime($request->start_time);
+        $endTime = strtotime($request->end_time);
+        $durationHours = ($endTime - $startTime) / 3600;
+
+        if ($durationHours > 4) {
+            return response()->json(['error' => 'Reservations cannot exceed 4 hours.'], 422);
+        }
+
+        Reservation::create([
+            'user_id' => auth()->id(),
+            'facility_id' => $request->facility_id,
+            'start_time' => $request->start_time,
+            'end_time' => $request->end_time,
+            'status' => 'pending',
+        ]);
+
+        return response()->json(['message' => 'Reservation submitted successfully']);
+    })->name('reservations.store');
+
     Route::get('/library-status', function () {
         $facility = Facility::where('room_name', 'Library')->first();
         return view('facility_status', compact('facility'));
@@ -86,7 +131,7 @@ Route::middleware(['auth', 'verified', 'nocache'])->group(function () {
             'Whiteboard' => 'Whiteboard',
         ];
 
-        $borrowedEquipment = BorrowedEquipment::where('status', 'borrowed')->get();
+        $borrowedEquipment = BorrowedEquipment::where('status', 'borrowed')->where('is_approved', true)->get();
         $userBorrowed = BorrowedEquipment::where('user_id', auth()->id())
             ->where('status', 'borrowed')
             ->get();
@@ -112,6 +157,14 @@ Route::middleware(['auth', 'verified', 'nocache'])->group(function () {
             'end_time' => 'required|date|after:start_time',
         ]);
 
+        $facility = Facility::findOrFail($request->facility_id);
+
+        // Check if facility is available for booking
+        if (!$facility->is_borrowable && $facility->room_name !== 'Activity Center') {
+            return response()->json(['error' => 'This facility is not available for reservation.'], 422);
+        }
+
+        // Check for time conflicts
         $conflict = Reservation::where('facility_id', $request->facility_id)
             ->where('status', 'approved')
             ->where(function ($query) use ($request) {
@@ -126,6 +179,15 @@ Route::middleware(['auth', 'verified', 'nocache'])->group(function () {
 
         if ($conflict) {
             return response()->json(['error' => 'This reservation conflicts with an existing approved booking.'], 422);
+        }
+
+        // Check for maximum booking duration (e.g., 4 hours)
+        $startTime = strtotime($request->start_time);
+        $endTime = strtotime($request->end_time);
+        $durationHours = ($endTime - $startTime) / 3600;
+
+        if ($durationHours > 4) {
+            return response()->json(['error' => 'Reservations cannot exceed 4 hours.'], 422);
         }
 
         Reservation::create([
@@ -147,6 +209,7 @@ Route::middleware(['auth', 'verified', 'nocache'])->group(function () {
 
         $conflict = BorrowedEquipment::where('equipment_name', $request->equipment)
             ->where('status', 'borrowed')
+            ->where('is_approved', true)
             ->where('return_date', '>=', now()->toDateString())
             ->exists();
 
@@ -157,12 +220,44 @@ Route::middleware(['auth', 'verified', 'nocache'])->group(function () {
         BorrowedEquipment::create([
             'user_id' => auth()->id(),
             'equipment_name' => $request->equipment,
+            'borrowed_at' => now(),
             'return_date' => $request->return_date,
             'status' => 'borrowed',
+            'is_approved' => false,
+            'return_requested' => false,
         ]);
 
-        return response()->json(['message' => 'Equipment borrowed successfully.']);
+        return response()->json(['message' => 'Borrow request submitted for admin approval.']);
     })->name('borrowings.store');
+
+    Route::delete('/reservations/{id}', function ($id) {
+        $reservation = Reservation::where('user_id', auth()->id())
+            ->findOrFail($id);
+
+        if (!$reservation->canBeCancelled()) {
+            return response()->json(['error' => 'This reservation cannot be cancelled.'], 422);
+        }
+
+        $reservation->cancel();
+
+        return response()->json(['message' => 'Reservation cancelled successfully']);
+    })->name('reservations.cancel');
+
+    Route::post('/borrowings/{id}/request-return', function ($id) {
+        $borrowing = BorrowedEquipment::where('user_id', auth()->id())
+            ->where('status', 'borrowed')
+            ->where('is_approved', true)
+            ->findOrFail($id);
+
+        if ($borrowing->return_requested) {
+            return response()->json(['error' => 'Return request is already pending.'], 422);
+        }
+
+        $borrowing->return_requested = true;
+        $borrowing->save();
+
+        return response()->json(['message' => 'Return request submitted for admin approval.']);
+    })->name('borrowings.request_return');
 });
 
 Route::middleware(['auth', 'verified', 'admin', 'nocache'])->group(function () {
@@ -170,8 +265,17 @@ Route::middleware(['auth', 'verified', 'admin', 'nocache'])->group(function () {
     Route::post('/admin/users/{id}/remove-admin', [AdminController::class, 'removeAdmin']);
     Route::delete('/admin/users/{id}', [AdminController::class, 'deleteUser']);
     Route::delete('/admin/facilities/{id}', [AdminController::class, 'deleteFacility']);
+    Route::patch('/admin/facilities/{id}', [AdminController::class, 'updateFacility']);
     Route::post('/admin/reservations/{id}/approve', [AdminController::class, 'approveReservation']);
     Route::post('/admin/reservations/{id}/reject', [AdminController::class, 'rejectReservation']);
+    Route::delete('/admin/reservations/{id}', [AdminController::class, 'deleteReservation']);
+    Route::post('/admin/borrowings/{id}/approve', [AdminController::class, 'approveBorrowing'])->name('admin.borrowings.approve');
+    Route::post('/admin/borrowings/{id}/approve-return', [AdminController::class, 'approveReturnRequest'])->name('admin.borrowings.approve_return');
+});
+
+Route::middleware(['auth', 'verified', 'nocache'])->group(function () {
+    Route::post('/reservations/cleanup', [AdminController::class, 'cleanupExpiredReservations'])->name('reservations.cleanup');
+    Route::post('/attendance-logs/cleanup', [AdminController::class, 'cleanupAttendanceLogs'])->name('attendance.cleanup');
 });
 
 Route::get('/system-admin', [AdminController::class, 'dashboard'])

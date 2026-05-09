@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My UNISched | Facility Status Overview</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="stylesheet" href="{{ asset('css/dashboard_enhanced.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -42,7 +43,11 @@
                 <div class="user-profile">
                     <span class="year-badge">2026 A.Y.</span>
                     <a href="{{ route('profile.edit') }}" class="avatar-link">
-                        <img src="https://via.placeholder.com/48" alt="Profile" class="avatar">
+                        @if(auth()->user()->profile_picture)
+                            <img src="{{ asset('profile_pictures/' . auth()->user()->profile_picture) }}" alt="Profile" class="avatar">
+                        @else
+                            <img src="https://via.placeholder.com/48" alt="Profile" class="avatar">
+                        @endif
                     </a>
                     <div class="user-actions">
                         <a href="{{ route('profile.edit') }}">Profile</a>
@@ -59,14 +64,15 @@
                 @foreach($facilities as $facility)
                     @php
                         $percent = $facility->capacity > 0 ? round(($facility->current_occupancy / $facility->capacity) * 100) : 0;
-                        $reserved = $facility->reservations->isNotEmpty();
-                        $statusClass = $reserved || $percent > 80 ? 'red' : 'green';
+                        $statusClass = $facility->status === 'open' ? 'green' : ($facility->status === 'closed' ? 'red' : 'yellow');
+                        $statusText = ucfirst($facility->status);
+                        $statusChipClass = 'status-' . $facility->status;
                     @endphp
                     <div class="card status-card {{ $statusClass }}" onclick="window.location.href='{{ route('facility.calendar', $facility->id) }}'">
                         <div class="card-info">
                             <h3>{{ $facility->room_name }}</h3>
                             <p>{{ $facility->building }}</p>
-                            <p>Status: <span class="status-chip {{ $reserved ? 'status-reserved' : 'status-open' }}">{{ $reserved ? 'RESERVED' : 'OPEN' }}</span></p>
+                            <p>Status: <span class="status-chip {{ $statusChipClass }}">{{ $statusText }}</span></p>
                             <p>Occupancy: <strong>{{ $percent }}%</strong></p>
                         </div>
                         <div class="progress-circle" data-percent="{{ $percent }}">
@@ -108,8 +114,17 @@
                         <ul class="list-clean">
                             @foreach($activeReservations as $reservation)
                                 <li>
-                                    <div class="item-title">{{ $reservation->facility->room_name }}</div>
-                                    <p class="item-subtitle">{{ $reservation->start_time->format('M d, H:i') }} — {{ $reservation->end_time->format('H:i') }}</p>
+                                    <div class="reservation-item">
+                                        <div class="reservation-info">
+                                            <div class="item-title">{{ $reservation->facility->room_name }}</div>
+                                            <p class="item-subtitle">{{ $reservation->start_time->format('M d, H:i') }} — {{ $reservation->end_time->format('H:i') }}</p>
+                                        </div>
+                                        @if($reservation->canBeCancelled())
+                                            <button class="btn-cancel" onclick="cancelReservation({{ $reservation->id }})">
+                                                <i class="fas fa-times"></i> Cancel
+                                            </button>
+                                        @endif
+                                    </div>
                                 </li>
                             @endforeach
                         </ul>
@@ -124,8 +139,18 @@
                         <ul class="list-clean">
                             @foreach($borrowedEquipment as $item)
                                 <li>
-                                    <div class="item-title">{{ $item->equipment_name }}</div>
-                                    <p class="item-subtitle">Return by {{ $item->return_date->format('M d, Y') }}</p>
+                                    <div class="equipment-item {{ $item->isOverdue() ? 'overdue' : '' }}">
+                                        <div class="equipment-info">
+                                            <div class="item-title">{{ $item->equipment_name }}</div>
+                                            <p class="item-subtitle">Return by {{ $item->return_date->format('M d, Y') }}</p>
+                                            @if($item->isOverdue())
+                                                <span class="overdue-badge">Overdue</span>
+                                            @endif
+                                        </div>
+                                        <button class="btn-return" onclick="returnEquipment({{ $item->id }})">
+                                            <i class="fas fa-undo"></i> Return
+                                        </button>
+                                    </div>
                                 </li>
                             @endforeach
                         </ul>
