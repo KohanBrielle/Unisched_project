@@ -174,11 +174,7 @@
                 <div class="user-profile">
                     <span class="year-badge">Admin <i class="fas fa-shield-alt"></i></span>
                     <a href="{{ route('profile.edit') }}" class="avatar-link">
-                        @if(auth()->user()->profile_picture)
-                            <img src="{{ asset('profile_pictures/' . auth()->user()->profile_picture) }}" alt="Profile" class="avatar">
-                        @else
-                            <img src="https://via.placeholder.com/40" alt="Profile" class="avatar">
-                        @endif
+                        <img src="{{ auth()->user()->profile_picture_url }}" alt="Profile" class="avatar">
                     </a>
                     <div class="user-actions">
                         <a href="{{ route('profile.edit') }}" class="profile-btn">Profile</a>
@@ -208,8 +204,8 @@
                         <p>Facilities</p>
                     </div>
                     <div class="stat-card">
-                        <h3>{{ \App\Models\Reservation::count() }}</h3>
-                        <p>Reservations</p>
+                        <h3>{{ \App\Models\Reservation::whereIn('status', ['pending', 'approved'])->count() }}</h3>
+                        <p>Current Reservations</p>
                     </div>
                 </div>
             </section>

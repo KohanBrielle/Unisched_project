@@ -281,11 +281,7 @@
                 <div class="user-profile">
                     <span class="year-badge">2026 A.Y.</span>
                     <a href="{{ route('profile.edit') }}" class="avatar-link">
-                        @if($user->profile_picture)
-                            <img src="{{ asset('profile_pictures/' . $user->profile_picture) }}" alt="Profile" class="avatar">
-                        @else
-                            <img src="https://via.placeholder.com/48" alt="Profile" class="avatar">
-                        @endif
+                        <img src="{{ $user->profile_picture_url }}" alt="Profile" class="avatar">
                     </a>
                     <div class="user-actions">
                         <a href="{{ route('profile.edit') }}">Profile</a>
@@ -301,11 +297,7 @@
             <div class="profile-section">
                 <div class="profile-header">
                     <div class="profile-avatar">
-                        @if($user->profile_picture)
-                            <img src="{{ asset('profile_pictures/' . $user->profile_picture) }}" alt="{{ $user->name }}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
-                        @else
-                            {{ strtoupper(substr($user->name, 0, 1)) }}
-                        @endif
+                        <img src="{{ $user->profile_picture_url }}" alt="{{ $user->name }}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
                     </div>
                     <div class="profile-info">
                         <h1>{{ $user->name }}</h1>
@@ -389,7 +381,7 @@
                                 @if($user->profile_picture)
                                     <div class="mt-2">
                                         <p class="text-sm text-gray-600">Current profile picture:</p>
-                                        <img src="{{ asset('profile_pictures/' . $user->profile_picture) }}" alt="Current profile picture" class="mt-1 rounded-lg" style="width: 80px; height: 80px; object-fit: cover;">
+                                        <img src="{{ $user->profile_picture_url }}" alt="Current profile picture" class="mt-1 rounded-lg" style="width: 80px; height: 80px; object-fit: cover;">
                                     </div>
                                 @endif
                             </div>

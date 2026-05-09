@@ -70,11 +70,7 @@
                 <div class="user-profile">
                     <span class="year-badge">2026 A.Y. <i class="fas fa-chevron-right"></i></span>
                     <a href="{{ route('profile.edit') }}" class="avatar-link">
-                        @if(auth()->user()->profile_picture)
-                            <img src="{{ asset('profile_pictures/' . auth()->user()->profile_picture) }}" alt="Profile" class="avatar">
-                        @else
-                            <img src="https://via.placeholder.com/40" alt="Profile" class="avatar">
-                        @endif
+                        <img src="{{ auth()->user()->profile_picture_url }}" alt="Profile" class="avatar">
                     </a>
                     <div class="user-actions">
                         <a href="{{ route('profile.edit') }}" class="profile-btn">Profile</a>

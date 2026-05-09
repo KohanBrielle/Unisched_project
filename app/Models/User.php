@@ -45,4 +45,13 @@ class User extends Authenticatable
     {
         return $this->hasMany(BorrowedEquipment::class);
     }
+
+    public function getProfilePictureUrlAttribute(): string
+    {
+        if ($this->profile_picture && file_exists(public_path('profile_pictures/' . $this->profile_picture))) {
+            return asset('profile_pictures/' . $this->profile_picture);
+        }
+
+        return asset('profile_pictures/default.svg');
+    }
 }

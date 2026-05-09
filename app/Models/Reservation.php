@@ -53,8 +53,7 @@ class Reservation extends Model
             return false;
         }
 
-        $this->status = 'cancelled';
-        return $this->save();
+        return $this->delete();
     }
 
     /**
