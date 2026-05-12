@@ -35,8 +35,12 @@ RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 # Copy the custom nginx config
 COPY nginx.conf /etc/nginx/sites-available/default
 
+# Copy the deployment script
+COPY deploy.sh /usr/local/bin/deploy.sh
+RUN chmod +x /usr/local/bin/deploy.sh
+
 # Expose port 80
 EXPOSE 80
 
-# Start Nginx and PHP-FPM
-CMD service nginx start && php-fpm
+# Run deployment script
+CMD ["/usr/local/bin/deploy.sh"]
