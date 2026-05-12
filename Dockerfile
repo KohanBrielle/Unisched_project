@@ -30,13 +30,9 @@ COPY . /var/www
 # Install dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Ensure the storage and cache directories exist
-RUN mkdir -p /var/www/storage /var/www/bootstrap/cache
-
-# Set ownership to the web server user
+# Create directories and set permissions before running the app
+RUN mkdir -p /var/www/storage/logs /var/www/storage/framework/views /var/www/storage/framework/sessions /var/www/storage/framework/cache /var/www/bootstrap/cache
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
-
-# Set correct permissions
 RUN chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
 # Copy the custom nginx config
