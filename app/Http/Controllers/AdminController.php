@@ -223,4 +223,14 @@ class AdminController extends Controller
 
         return response()->json(['message' => 'Facility updated successfully', 'facility' => $facility]);
     }
+
+    public function clearReservationHistory(Request $request)
+    {
+        $user = auth()->user();
+        
+        // Delete all reservations for the current user
+        $count = Reservation::where('user_id', $user->id)->delete();
+        
+        return response()->json(['message' => "Cleared {$count} reservations from your history"]);
+    }
 }

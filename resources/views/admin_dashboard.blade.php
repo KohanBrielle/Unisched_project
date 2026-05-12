@@ -145,6 +145,49 @@
             background-color: #fff3cd;
             color: #856404;
         }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+            }
+            
+            .admin-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .stat-card h3 {
+                font-size: 1.8rem;
+            }
+            
+            table {
+                font-size: 0.9rem;
+            }
+            
+            th, td {
+                padding: 8px 6px;
+            }
+            
+            .user-actions {
+                flex-direction: row;
+                justify-content: center;
+                gap: 10px;
+            }
+            
+            .user-actions a,
+            .user-actions button {
+                padding: 6px 10px;
+                font-size: 0.9rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -169,7 +212,8 @@
                 <source src="{{ asset('videos/LSPU.mp4') }}" type="video/mp4">
             </video>
 
-            <header>
+            <header style="position: relative;">
+                <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.7); z-index: -1;"></div>
                 <h1><i class="fas fa-crown"></i> Admin Dashboard</h1>
                 <div class="user-profile">
                     <span class="year-badge">Admin <i class="fas fa-shield-alt"></i></span>

@@ -244,6 +244,60 @@
             object-fit: cover;
             border: 2px solid #e5e7eb;
         }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+            }
+            
+            .profile-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 12px;
+            }
+            
+            .profile-info h1 {
+                font-size: 24px;
+            }
+            
+            .profile-section {
+                padding: 16px;
+            }
+            
+            .reservations-list {
+                gap: 12px;
+            }
+            
+            .reservation-item {
+                padding: 12px;
+            }
+            
+            .reservation-item h4 {
+                font-size: 1rem;
+            }
+            
+            .reservation-item p {
+                font-size: 0.9rem;
+            }
+            
+            .flex.justify-between.items-center {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+            
+            .flex.justify-between.items-center > div:first-child {
+                text-align: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -460,8 +514,17 @@
 
             <!-- Reservation History -->
             <div class="profile-section">
-                <h3 class="text-xl font-semibold text-gray-900 mb-4">Reservation History</h3>
-                <p class="text-sm text-gray-600 mb-6">All your recent reservations and their status.</p>
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-900">Reservation History</h3>
+                        <p class="text-sm text-gray-600">All your recent reservations and their status.</p>
+                    </div>
+                    @if($reservations->isNotEmpty())
+                        <button type="button" onclick="clearReservationHistory()" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                            <i class="fas fa-trash-alt mr-2"></i>Clear History
+                        </button>
+                    @endif
+                </div>
 
                 @if($reservations->isEmpty())
                     <div class="empty-state">
@@ -511,5 +574,31 @@
     </div>
 
     <script src="{{ asset('js/dashboard_enhanced.js') }}"></script>
+    <script>
+        function clearReservationHistory() {
+            if (confirm('Are you sure you want to clear all your reservation history? This action cannot be undone.')) {
+                fetch('{{ route("profile.reservations.clear") }}', {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        location.reload();
+                    } else if (data.error) {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while clearing reservation history.');
+                });
+            }
+        }
+    </script>
 </body>
 </html>

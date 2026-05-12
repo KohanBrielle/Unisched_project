@@ -147,6 +147,20 @@ Route::middleware(['auth', 'verified', 'nocache'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::delete('/profile/reservations', [AdminController::class, 'clearReservationHistory'])->name('profile.reservations.clear');
+
+    // Mobile UI Routes
+    Route::get('/mobile/dashboard', function () {
+        return view('mobile.dashboard');
+    })->name('mobile.dashboard');
+
+    Route::get('/mobile/calendar', function () {
+        return view('mobile.calendar');
+    })->name('mobile.calendar');
+
+    Route::get('/mobile/booking', function () {
+        return view('mobile.booking');
+    })->name('mobile.booking');
 
     Route::post('/facility/scan', [FacilityController::class, 'scan'])->name('facility.scan');
 
