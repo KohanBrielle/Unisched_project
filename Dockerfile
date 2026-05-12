@@ -35,6 +35,7 @@ RUN mkdir -p /var/www/storage/logs /var/www/storage/framework/views /var/www/sto
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 RUN chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
+
 # Copy the custom nginx config
 COPY nginx.conf /etc/nginx/sites-available/default
 
@@ -47,3 +48,10 @@ EXPOSE 80
 
 # Run deployment script
 CMD ["/usr/local/bin/deploy.sh"]
+
+# This ensures all necessary Laravel folders are created and writable
+RUN mkdir -p /var/www/storage/logs \
+             /var/www/storage/framework/sessions \
+             /var/www/storage/framework/views \
+             /var/www/storage/framework/cache \
+             /var/www/bootstrap/cache
