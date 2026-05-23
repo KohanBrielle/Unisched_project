@@ -3,574 +3,422 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>My UNISched | Profile</title>
-    <link rel="stylesheet" href="{{ asset('css/dashboard_enhanced.css') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f7f1ff',
+                            100: '#efe3ff',
+                            200: '#dbcbff',
+                            300: '#c4a4ff',
+                            400: '#a86fff',
+                            500: '#8546ff',
+                            600: '#6c31e0',
+                            700: '#4d2393',
+                            800: '#2f155b',
+                            900: '#1e0b36'
+                        }
+                    },
+                    boxShadow: {
+                        glow: '0 25px 80px rgba(60, 29, 105, 0.22)'
+                    }
+                }
+            }
+        };
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .profile-section {
-            background: white;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+        body {
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(129, 81, 214, 0.24), transparent 26%),
+                linear-gradient(135deg, #12061f 0%, #1d0b35 45%, #2b1452 100%);
+            color: #0f172a;
         }
 
-        .profile-header {
-            display: flex;
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.86);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        .dashboard-nav-link { transition: all 180ms ease; }
+        .dashboard-nav-link:hover,
+        .dashboard-nav-link.active {
+            background: linear-gradient(135deg, rgba(131, 82, 232, 0.95), rgba(78, 40, 146, 0.98));
+            color: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 14px 35px rgba(75, 45, 140, 0.2);
+        }
+
+        .dashboard-pill {
+            display: inline-flex;
             align-items: center;
-            gap: 16px;
-            margin-bottom: 24px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .profile-avatar {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary-purple), var(--primary-purple-soft));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-        }
-
-        .profile-info h1 {
-            margin: 0;
-            font-size: 28px;
+            gap: 0.5rem;
+            border-radius: 999px;
+            padding: 0.55rem 1rem;
+            background: rgba(133, 70, 255, 0.12);
+            color: #4d2393;
             font-weight: 700;
-            color: var(--text-primary);
         }
 
-        .profile-info p {
-            margin: 4px 0 0;
-            color: var(--text-muted);
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .stat-card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            border: 1px solid #e5e7eb;
-        }
-
-        .stat-card h3 {
-            margin: 0 0 4px;
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--primary-purple);
-        }
-
-        .stat-card p {
-            margin: 0;
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        .qr-section {
-            text-align: center;
-            background: linear-gradient(135deg, #f8f5ff, #eff0ff);
-            border-radius: 16px;
-            padding: 32px;
-            margin-bottom: 24px;
-        }
-
-        .qr-code {
-            width: 160px;
-            height: 160px;
-            margin: 20px auto;
-            border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            background: white;
-            padding: 12px;
-        }
-
-        .form-section {
-            background: white;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
-        }
-
-        .form-section h3 {
-            margin: 0 0 16px;
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: var(--text-primary);
-        }
-
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.2s ease;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: var(--primary-purple);
-            box-shadow: 0 0 0 3px rgba(95, 45, 145, 0.1);
-        }
-
-        .btn {
-            padding: 12px 24px;
+        .primary-button,
+        .secondary-button,
+        .danger-button {
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 500;
+            border-radius: 999px;
+            padding: 0.65rem 1rem;
+            font-weight: 800;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: transform 180ms ease, filter 180ms ease;
         }
 
-        .btn-primary {
-            background: var(--primary-purple);
-            color: white;
+        .primary-button {
+            background: linear-gradient(135deg, #8546ff, #5b21b6);
+            color: #fff;
         }
 
-        .btn-primary:hover {
-            background: var(--primary-purple-soft);
+        .secondary-button {
+            background: rgba(15, 23, 42, 0.06);
+            color: #0f172a;
+        }
+
+        .danger-button {
+            background: #dc2626;
+            color: #fff;
+        }
+
+        .primary-button:hover,
+        .secondary-button:hover,
+        .danger-button:hover {
             transform: translateY(-1px);
         }
 
-        .btn-danger {
-            background: #dc2626;
-            color: white;
+        .form-input {
+            width: 100%;
+            border-radius: 18px;
+            border: 1px solid #e9ddff;
+            background: rgba(251, 249, 255, 0.92);
+            padding: 0.85rem 1rem;
+            color: #0f172a;
         }
 
-        .btn-danger:hover {
-            background: #b91c1c;
-        }
-
-        .reservations-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .reservation-item {
-            background: white;
-            border-radius: 12px;
-            padding: 16px;
-            border: 1px solid #e5e7eb;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .reservation-info h4 {
-            margin: 0 0 4px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .reservation-info p {
-            margin: 0;
-            color: var(--text-muted);
-            font-size: 14px;
+        .form-input:focus {
+            outline: none;
+            border-color: rgba(133, 70, 255, 0.45);
+            box-shadow: 0 0 0 4px rgba(133, 70, 255, 0.1);
         }
 
         .status-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            padding: 0.15rem 0.8rem;
+            font-size: 0.75rem;
+            font-weight: 800;
         }
 
-        .status-approved {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .status-pending {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .status-rejected {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-muted);
-        }
-
-        .form-group input[type="file"] {
-            padding: 8px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            background: white;
-        }
-
-        .form-group input[type="file"]:focus {
-            outline: none;
-            border-color: var(--primary-purple);
-            box-shadow: 0 0 0 3px rgba(95, 45, 145, 0.1);
-        }
-
-        .profile-picture-preview {
-            width: 80px;
-            height: 80px;
-            border-radius: 8px;
-            object-fit: cover;
-            border: 2px solid #e5e7eb;
-        }
-
-        /* Mobile responsiveness */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 100%;
-                height: auto;
-                position: relative;
-            }
-            
-            .main-content {
-                margin-left: 0;
-                padding: 20px;
-            }
-            
-            .profile-header {
-                flex-direction: column;
-                text-align: center;
-                gap: 12px;
-            }
-            
-            .profile-info h1 {
-                font-size: 24px;
-            }
-            
-            .profile-section {
-                padding: 16px;
-            }
-            
-            .reservations-list {
-                gap: 12px;
-            }
-            
-            .reservation-item {
-                padding: 12px;
-            }
-            
-            .reservation-item h4 {
-                font-size: 1rem;
-            }
-            
-            .reservation-item p {
-                font-size: 0.9rem;
-            }
-            
-            .flex.justify-between.items-center {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 12px;
-            }
-            
-            .flex.justify-between.items-center > div:first-child {
-                text-align: center;
-            }
-        }
+        .status-approved { background: rgba(34, 197, 94, 0.14); color: #166534; }
+        .status-pending { background: rgba(245, 158, 11, 0.18); color: #92400e; }
+        .status-rejected { background: rgba(248, 113, 113, 0.16); color: #991b1b; }
     </style>
 </head>
-<body>
-    <div class="container">
-        <!-- Sidebar Navigation -->
-        <aside class="sidebar">
-            <div class="logo">
-                <span class="logo-my">My</span> <span class="logo-uni">UNISched</span>
-            </div>
-            <nav id="sidebar-nav">
-                <ul>
-                    <li><a href="{{ route('dashboard') }}"><i class="fas fa-th-large"></i> <span>Facility Status Overview</span></a></li>
-                    <li><a href="{{ route('activity.reservation') }}"><i class="far fa-calendar-alt"></i> <span>Activity Center Reservation</span></a></li>
-                    <li><a href="{{ route('library.status') }}"><i class="fas fa-book"></i> <span>Library Status</span></a></li>
-                    <li><a href="{{ route('gym.status') }}"><i class="fas fa-dumbbell"></i> <span>Gym Status</span></a></li>
-                    <li><a href="{{ route('canteen.status') }}"><i class="fas fa-utensils"></i> <span>Canteen Status</span></a></li>
-                    <li><a href="{{ route('bao.status') }}"><i class="fas fa-building"></i> <span>BAO Status</span></a></li>
-                    <li><a href="{{ route('equipment.borrowing') }}"><i class="fas fa-tools"></i> <span>Equipment Borrowing</span></a></li>
-                    @if(auth()->user()->is_admin)
-                        <li><a href="{{ route('system.admin') }}"><i class="fas fa-cog"></i> <span>System Admin</span></a></li>
-                    @endif
-                </ul>
-            </nav>
-        </aside>
+<body class="min-h-screen text-slate-900">
+    <div class="relative min-h-screen overflow-hidden">
+        <video autoplay muted loop playsinline class="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-15 blur-[2px]">
+            <source src="{{ asset('videos/LSPU.mp4') }}" type="video/mp4">
+        </video>
+        <div class="absolute inset-0 bg-[linear-gradient(135deg,rgba(14,8,27,0.88),rgba(36,20,67,0.72),rgba(25,10,48,0.82))]"></div>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <header>
-                <div>
-                    <p class="eyebrow">Profile</p>
-                    <h1>Manage Your Account</h1>
-                    <p class="subtitle">Update your information, view your reservations, and manage your QR code.</p>
-                </div>
+        <div class="relative z-10 flex min-h-screen flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:px-8 xl:px-10">
+            <aside class="w-full shrink-0 lg:w-80">
+                <div class="glass-panel rounded-[28px] border border-white/60 p-4 shadow-glow">
+                    <div class="mb-4 flex items-center gap-3 rounded-[22px] bg-[#1e0b36] px-4 py-3 text-white shadow-lg">
+                        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10">
+                            <i class="fas fa-crown text-lg"></i>
+                        </div>
+                        <div>
+                            <p class="text-[0.65rem] uppercase tracking-[0.3em] text-violet-100/80">My UNISched</p>
+                            <p class="text-lg font-semibold">User Console</p>
+                        </div>
+                    </div>
 
-                <div class="user-profile">
-                    <span class="year-badge">2026 A.Y.</span>
-                    <a href="{{ route('profile.edit') }}" class="avatar-link">
-                        <img src="{{ $user->profile_picture_url }}" alt="Profile" class="avatar">
-                    </a>
-                    <div class="user-actions">
-                        <a href="{{ route('profile.edit') }}">Profile</a>
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <button type="submit">Log Out</button>
-                        </form>
+                    <div class="rounded-[24px] bg-gradient-to-b from-violet-50 to-white p-3">
+                        <p class="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.28em] text-slate-500">Quick Navigation</p>
+                        <nav id="sidebar-nav">
+                            <ul class="space-y-2">
+                                <li><a href="{{ route('dashboard') }}" class="dashboard-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700"><i class="fas fa-th-large w-4"></i><span>Facility Status Overview</span></a></li>
+                                <li><a href="{{ route('activity.reservation') }}" class="dashboard-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700"><i class="far fa-calendar-alt w-4"></i><span>Activity Center Reservation</span></a></li>
+                                <li><a href="{{ route('library.status') }}" class="dashboard-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700"><i class="fas fa-book w-4"></i><span>Library Status</span></a></li>
+                                <li><a href="{{ route('gym.status') }}" class="dashboard-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700"><i class="fas fa-dumbbell w-4"></i><span>Gym Status</span></a></li>
+                                <li><a href="{{ route('canteen.status') }}" class="dashboard-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700"><i class="fas fa-utensils w-4"></i><span>Canteen Status</span></a></li>
+                                <li><a href="{{ route('bao.status') }}" class="dashboard-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700"><i class="fas fa-building w-4"></i><span>BAO Status</span></a></li>
+                                <li><a href="{{ route('equipment.borrowing') }}" class="dashboard-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700"><i class="fas fa-tools w-4"></i><span>Equipment Borrowing</span></a></li>
+                                @if(auth()->user()->is_admin)
+                                    <li><a href="{{ route('system.admin') }}" class="dashboard-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700"><i class="fas fa-cog w-4"></i><span>System Admin</span></a></li>
+                                @endif
+                            </ul>
+                        </nav>
+                        <div class="mt-4 rounded-2xl border border-violet-100 bg-violet-50/80 px-4 py-3">
+                            <p class="text-[0.68rem] font-bold uppercase tracking-[0.28em] text-violet-700">Campus pulse</p>
+                            <p class="mt-2 text-sm text-slate-600">Update your account details and keep your campus profile in sync with the same polished console theme.</p>
+                        </div>
                     </div>
                 </div>
-            </header>
+            </aside>
 
-            <!-- Profile Overview -->
-            <div class="profile-section">
-                <div class="profile-header">
-                    <div class="profile-avatar">
-                        <img src="{{ $user->profile_picture_url }}" alt="{{ $user->name }}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
-                    </div>
-                    <div class="profile-info">
-                        <h1>{{ $user->name }}</h1>
-                        <p>{{ $user->is_admin ? 'Administrator' : 'Student' }} â€¢ Student ID: {{ $user->student_id }}</p>
-                    </div>
-                </div>
-
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h3>{{ $reservations->count() }}</h3>
-                        <p>Total Reservations</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3>{{ $reservations->where('status', 'approved')->count() }}</h3>
-                        <p>Approved Reservations</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3>{{ $pendingReservations->count() }}</h3>
-                        <p>Pending Reservations</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3>{{ $reservations->where('status', 'approved')->where('end_time', '>', now())->count() }}</h3>
-                        <p>Active Reservations</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- QR Code Section -->
-                <div class="lg:col-span-1">
-                    <div class="qr-section">
-                        <h3 class="text-xl font-semibold text-gray-900 mb-4">My QR Code</h3>
-                        <p class="text-sm text-gray-600 mb-6">Use this QR code when checking in at facilities</p>
-
-                        @if($qrUrl)
-                            <img src="{{ $qrUrl }}" alt="Your QR Code" class="qr-code" />
-                            <p class="text-xs text-gray-500 mt-4">Show this QR code to facility staff for quick check-in</p>
-                        @else
-                            <div class="qr-code flex items-center justify-center">
-                                <i class="fas fa-qrcode text-4xl text-gray-400"></i>
+            <main class="flex-1">
+                <div class="glass-panel rounded-[30px] border border-white/70 p-4 shadow-glow sm:p-6 lg:p-7">
+                    <header class="flex flex-col gap-5 border-b border-violet-100 pb-5 xl:flex-row xl:items-center xl:justify-between">
+                        <div>
+                            <p class="text-[0.7rem] font-bold uppercase tracking-[0.3em] text-violet-700">Profile</p>
+                            <div class="mt-3 flex flex-wrap items-center gap-3">
+                                <h1 class="text-2xl font-bold text-slate-900 sm:text-3xl">Manage Your Account</h1>
+                                <span class="dashboard-pill"><i class="fas fa-calendar-alt"></i> 2026 A.Y.</span>
                             </div>
-                            <p class="text-xs text-gray-500 mt-4">QR code will be generated after registration</p>
-                        @endif
-                    </div>
-                </div>
-
-                <!-- Forms Section -->
-                <div class="lg:col-span-2 space-y-6">
-                    <!-- Update Profile Information -->
-                    <div class="form-section">
-                        <h3>Profile Information</h3>
-                        <p class="text-sm text-gray-600 mb-6">Update your account details and email address.</p>
-
-                        <form method="post" action="{{ route('profile.update') }}" enctype="multipart/form-data">
-                            @csrf
-                            @method('patch')
-
-                            <div class="form-group">
-                                <label for="name">Name</label>
-                                <input id="name" name="name" type="text" value="{{ old('name', $user->name) }}" required autofocus autocomplete="name" />
-                                @error('name')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div class="form-group">
-                                <label for="email">Email</label>
-                                <input id="email" name="email" type="email" value="{{ old('email', $user->email) }}" required autocomplete="username" />
-                                @error('email')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div class="form-group">
-                                <label for="profile_picture">Profile Picture</label>
-                                <input id="profile_picture" name="profile_picture" type="file" accept="image/*" />
-                                <p class="text-xs text-gray-500 mt-1">Accepted formats: JPEG, PNG, JPG, GIF. Max size: 2MB</p>
-                                @error('profile_picture')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                                @if($user->profile_picture)
-                                    <div class="mt-2">
-                                        <p class="text-sm text-gray-600">Current profile picture:</p>
-                                        <img src="{{ $user->profile_picture_url }}" alt="Current profile picture" class="mt-1 rounded-lg" style="width: 80px; height: 80px; object-fit: cover;">
+                            <p class="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">Update your information, review your reservations, and manage your QR code from one elevated workspace.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <div class="flex items-center gap-3 rounded-full bg-white/80 px-3 py-2 shadow-sm ring-1 ring-violet-100">
+                                <a href="{{ route('profile.edit') }}" class="flex items-center gap-3">
+                                    <img src="{{ $user->profile_picture_url }}" alt="Profile" class="h-10 w-10 rounded-full object-cover ring-2 ring-violet-100">
+                                    <div class="text-left">
+                                        <p class="text-sm font-semibold text-slate-900">{{ $user->name }}</p>
+                                        <p class="text-[0.7rem] uppercase tracking-[0.2em] text-slate-500">{{ $user->is_admin ? 'Administrator' : 'Student' }}</p>
                                     </div>
+                                </a>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <a href="{{ route('profile.edit') }}" class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-violet-100">Profile</a>
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <button type="submit" class="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Log Out</button>
+                                </form>
+                            </div>
+                        </div>
+                    </header>
+
+                    <section class="mt-6 rounded-[24px] bg-white/90 p-5 shadow-[0_18px_46px_rgba(63,31,122,0.12)] ring-1 ring-white/80">
+                        <div class="flex flex-wrap items-center gap-4 border-b border-violet-100 pb-4">
+                            <div class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-violet-600 to-violet-900 text-lg font-bold text-white">
+                                <img src="{{ $user->profile_picture_url }}" alt="{{ $user->name }}" class="h-full w-full object-cover">
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold text-slate-900">{{ $user->name }}</h2>
+                                <p class="text-sm text-slate-600">{{ $user->is_admin ? 'Administrator' : 'Student' }} • Student ID: {{ $user->student_id }}</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                            <div class="rounded-[20px] bg-violet-50/80 p-4">
+                                <p class="text-sm text-slate-500">Total Reservations</p>
+                                <p class="mt-2 text-3xl font-bold text-slate-900">{{ $reservations->count() }}</p>
+                            </div>
+                            <div class="rounded-[20px] bg-violet-50/80 p-4">
+                                <p class="text-sm text-slate-500">Approved Reservations</p>
+                                <p class="mt-2 text-3xl font-bold text-slate-900">{{ $reservations->where('status', 'approved')->count() }}</p>
+                            </div>
+                            <div class="rounded-[20px] bg-violet-50/80 p-4">
+                                <p class="text-sm text-slate-500">Pending Reservations</p>
+                                <p class="mt-2 text-3xl font-bold text-slate-900">{{ $pendingReservations->count() }}</p>
+                            </div>
+                            <div class="rounded-[20px] bg-violet-50/80 p-4">
+                                <p class="text-sm text-slate-500">Active Reservations</p>
+                                <p class="mt-2 text-3xl font-bold text-slate-900">{{ $reservations->where('status', 'approved')->where('end_time', '>', now())->count() }}</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="mt-6 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+                        <div class="rounded-[24px] bg-white/90 p-5 shadow-[0_18px_46px_rgba(63,31,122,0.12)] ring-1 ring-white/80">
+                            <p class="text-[0.68rem] font-bold uppercase tracking-[0.28em] text-violet-700">My QR Code</p>
+                            <p class="mt-2 text-sm text-slate-600">Use this QR code when checking in at facilities.</p>
+                            <div class="mt-4 rounded-[22px] bg-gradient-to-br from-violet-50 to-white p-5 text-center">
+                                @if($qrUrl)
+                                    <img src="{{ $qrUrl }}" alt="Your QR Code" class="mx-auto h-44 w-44 rounded-2xl bg-white p-3 shadow-[0_10px_38px_rgba(76,37,141,0.14)]">
+                                    <p class="mt-4 text-sm text-slate-600">Show this QR code to facility staff for quick check-in.</p>
+                                @else
+                                    <div class="mx-auto flex h-44 w-44 items-center justify-center rounded-2xl bg-white text-violet-300 shadow-[0_10px_38px_rgba(76,37,141,0.14)]">
+                                        <i class="fas fa-qrcode text-5xl"></i>
+                                    </div>
+                                    <p class="mt-4 text-sm text-slate-600">QR code will be generated after registration.</p>
                                 @endif
                             </div>
+                        </div>
 
-                            <div class="flex gap-4">
-                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <div class="space-y-4">
+                            <div class="rounded-[24px] bg-white/90 p-5 shadow-[0_18px_46px_rgba(63,31,122,0.12)] ring-1 ring-white/80">
+                                <div>
+                                    <p class="text-[0.68rem] font-bold uppercase tracking-[0.28em] text-violet-700">Profile Information</p>
+                                    <h2 class="mt-2 text-lg font-bold text-slate-900">Update your account details</h2>
+                                </div>
+                                <form method="post" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="mt-4 space-y-3">
+                                    @csrf
+                                    @method('patch')
+
+                                    <div>
+                                        <label for="name" class="mb-2 block text-sm font-semibold text-slate-700">Name</label>
+                                        <input id="name" name="name" type="text" value="{{ old('name', $user->name) }}" required autofocus autocomplete="name" class="form-input">
+                                        @error('name')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label for="email" class="mb-2 block text-sm font-semibold text-slate-700">Email</label>
+                                        <input id="email" name="email" type="email" value="{{ old('email', $user->email) }}" required autocomplete="username" class="form-input">
+                                        @error('email')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label for="profile_picture" class="mb-2 block text-sm font-semibold text-slate-700">Profile Picture</label>
+                                        <input id="profile_picture" name="profile_picture" type="file" accept="image/*" class="form-input">
+                                        <p class="mt-2 text-xs text-slate-500">Accepted formats: JPEG, PNG, JPG, GIF. Max size: 2MB</p>
+                                        @error('profile_picture')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                        @if($user->profile_picture)
+                                            <div class="mt-3">
+                                                <p class="text-sm text-slate-600">Current profile picture:</p>
+                                                <img src="{{ $user->profile_picture_url }}" alt="Current profile picture" class="mt-2 h-20 w-20 rounded-2xl object-cover ring-1 ring-violet-100">
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <button type="submit" class="primary-button">Save Changes</button>
+                                </form>
                             </div>
-                        </form>
-                    </div>
 
-                    <!-- Update Password -->
-                    <div class="form-section">
-                        <h3>Update Password</h3>
-                        <p class="text-sm text-gray-600 mb-6">Ensure your account is using a secure password.</p>
+                            <div class="rounded-[24px] bg-white/90 p-5 shadow-[0_18px_46px_rgba(63,31,122,0.12)] ring-1 ring-white/80">
+                                <div>
+                                    <p class="text-[0.68rem] font-bold uppercase tracking-[0.28em] text-violet-700">Update Password</p>
+                                    <h2 class="mt-2 text-lg font-bold text-slate-900">Keep your account secure</h2>
+                                </div>
+                                <form method="post" action="{{ route('password.update') }}" class="mt-4 space-y-3">
+                                    @csrf
+                                    @method('put')
 
-                        <form method="post" action="{{ route('password.update') }}">
+                                    <div>
+                                        <label for="current_password" class="mb-2 block text-sm font-semibold text-slate-700">Current Password</label>
+                                        <input id="current_password" name="current_password" type="password" autocomplete="current-password" class="form-input">
+                                        @error('current_password')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label for="password" class="mb-2 block text-sm font-semibold text-slate-700">New Password</label>
+                                        <input id="password" name="password" type="password" autocomplete="new-password" class="form-input">
+                                        @error('password')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label for="password_confirmation" class="mb-2 block text-sm font-semibold text-slate-700">Confirm New Password</label>
+                                        <input id="password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" class="form-input">
+                                        @error('password_confirmation')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <button type="submit" class="primary-button">Update Password</button>
+                                </form>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="mt-6 rounded-[24px] bg-white/90 p-5 shadow-[0_18px_46px_rgba(63,31,122,0.12)] ring-1 ring-white/80">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <p class="text-[0.68rem] font-bold uppercase tracking-[0.28em] text-violet-700">Pending Reservations</p>
+                                <h2 class="mt-2 text-lg font-bold text-slate-900">Reservations waiting for approval</h2>
+                            </div>
+                        </div>
+                        @if($pendingReservations->isEmpty())
+                            <div class="mt-4 rounded-[20px] bg-violet-50/80 px-4 py-6 text-center text-sm text-slate-600">
+                                <i class="fas fa-calendar-times mb-2 block text-xl text-violet-500"></i>
+                                You don't have any pending reservations at the moment.
+                            </div>
+                        @else
+                            <div class="mt-4 space-y-3">
+                                @foreach($pendingReservations as $reservation)
+                                    <div class="flex flex-wrap items-center justify-between gap-4 rounded-[18px] bg-violet-50/70 px-4 py-3">
+                                        <div>
+                                            <p class="font-bold text-slate-900">{{ $reservation->facility->room_name }}</p>
+                                            <p class="mt-1 text-sm text-slate-600">{{ $reservation->facility->building }} • {{ $reservation->start_time->format('M d, Y H:i') }} — {{ $reservation->end_time->format('M d, Y H:i') }}</p>
+                                        </div>
+                                        <span class="status-badge status-pending">Pending</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </section>
+
+                    <section class="mt-6 rounded-[24px] bg-white/90 p-5 shadow-[0_18px_46px_rgba(63,31,122,0.12)] ring-1 ring-white/80">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <p class="text-[0.68rem] font-bold uppercase tracking-[0.28em] text-violet-700">Reservation History</p>
+                                <h2 class="mt-2 text-lg font-bold text-slate-900">All recent reservations</h2>
+                            </div>
+                            @if($reservations->isNotEmpty())
+                                <button type="button" onclick="clearReservationHistory()" class="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white">
+                                    <i class="fas fa-trash-alt"></i> Clear History
+                                </button>
+                            @endif
+                        </div>
+
+                        @if($reservations->isEmpty())
+                            <div class="mt-4 rounded-[20px] bg-violet-50/80 px-4 py-6 text-center text-sm text-slate-600">
+                                <i class="fas fa-history mb-2 block text-xl text-violet-500"></i>
+                                You haven't made any reservations yet.
+                            </div>
+                        @else
+                            <div class="mt-4 space-y-3">
+                                @foreach($reservations as $reservation)
+                                    <div class="flex flex-wrap items-center justify-between gap-4 rounded-[18px] bg-violet-50/70 px-4 py-3">
+                                        <div>
+                                            <p class="font-bold text-slate-900">{{ $reservation->facility->room_name }}</p>
+                                            <p class="mt-1 text-sm text-slate-600">{{ $reservation->facility->building }} • {{ $reservation->start_time->format('M d, Y H:i') }} — {{ $reservation->end_time->format('M d, Y H:i') }}</p>
+                                        </div>
+                                        <span class="status-badge status-{{ $reservation->status }}">{{ ucfirst($reservation->status) }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </section>
+
+                    <section class="mt-6 rounded-[24px] bg-white/90 p-5 shadow-[0_18px_46px_rgba(63,31,122,0.12)] ring-1 ring-white/80">
+                        <p class="text-[0.68rem] font-bold uppercase tracking-[0.28em] text-violet-700">Delete Account</p>
+                        <h2 class="mt-2 text-lg font-bold text-slate-900">Permanently remove your account</h2>
+                        <p class="mt-2 text-sm text-slate-600">Once your account is deleted, all of its resources and data will be permanently deleted. Before deleting your account, please download any data or information that you wish to retain.</p>
+
+                        <form method="post" action="{{ route('profile.destroy') }}" class="mt-4">
                             @csrf
-                            @method('put')
+                            @method('delete')
 
-                            <div class="form-group">
-                                <label for="current_password">Current Password</label>
-                                <input id="current_password" name="current_password" type="password" autocomplete="current-password" />
-                                @error('current_password')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div class="form-group">
-                                <label for="password">New Password</label>
-                                <input id="password" name="password" type="password" autocomplete="new-password" />
+                            <div class="max-w-md">
+                                <label for="delete_password" class="mb-2 block text-sm font-semibold text-slate-700">Password</label>
+                                <input id="delete_password" name="password" type="password" autocomplete="current-password" class="form-input">
                                 @error('password')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
 
-                            <div class="form-group">
-                                <label for="password_confirmation">Confirm New Password</label>
-                                <input id="password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" />
-                                @error('password_confirmation')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div class="flex gap-4">
-                                <button type="submit" class="btn btn-primary">Update Password</button>
-                            </div>
+                            <button type="submit" class="danger-button mt-4">Delete Account</button>
                         </form>
-                    </div>
+                    </section>
                 </div>
-            </div>
-
-            <!-- Pending Reservations -->
-            <div class="profile-section">
-                <h3 class="text-xl font-semibold text-gray-900 mb-4">Pending Reservations</h3>
-                <p class="text-sm text-gray-600 mb-6">Reservations waiting for approval.</p>
-
-                @if($pendingReservations->isEmpty())
-                    <div class="empty-state">
-                        <i class="fas fa-calendar-times"></i>
-                        <p>You don't have any pending reservations at the moment.</p>
-                    </div>
-                @else
-                    <div class="reservations-list">
-                        @foreach($pendingReservations as $reservation)
-                            <div class="reservation-item">
-                                <div class="reservation-info">
-                                    <h4>{{ $reservation->facility->room_name }}</h4>
-                                    <p>{{ $reservation->facility->building }} â€¢ {{ $reservation->start_time->format('M d, Y H:i') }} â€” {{ $reservation->end_time->format('M d, Y H:i') }}</p>
-                                </div>
-                                <span class="status-badge status-pending">Pending</span>
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
-            </div>
-
-            <!-- Reservation History -->
-            <div class="profile-section">
-                <div class="flex justify-between items-center mb-4">
-                    <div>
-                        <h3 class="text-xl font-semibold text-gray-900">Reservation History</h3>
-                        <p class="text-sm text-gray-600">All your recent reservations and their status.</p>
-                    </div>
-                    @if($reservations->isNotEmpty())
-                        <button type="button" onclick="clearReservationHistory()" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
-                            <i class="fas fa-trash-alt mr-2"></i>Clear History
-                        </button>
-                    @endif
-                </div>
-
-                @if($reservations->isEmpty())
-                    <div class="empty-state">
-                        <i class="fas fa-history"></i>
-                        <p>You haven't made any reservations yet.</p>
-                    </div>
-                @else
-                    <div class="reservations-list">
-                        @foreach($reservations as $reservation)
-                            <div class="reservation-item">
-                                <div class="reservation-info">
-                                    <h4>{{ $reservation->facility->room_name }}</h4>
-                                    <p>{{ $reservation->facility->building }} â€¢ {{ $reservation->start_time->format('M d, Y H:i') }} â€” {{ $reservation->end_time->format('M d, Y H:i') }}</p>
-                                </div>
-                                <span class="status-badge status-{{ $reservation->status }}">
-                                    {{ ucfirst($reservation->status) }}
-                                </span>
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
-            </div>
-
-            <!-- Delete Account -->
-            <div class="form-section">
-                <h3 class="text-red-600">Delete Account</h3>
-                <p class="text-sm text-gray-600 mb-6">Once your account is deleted, all of its resources and data will be permanently deleted. Before deleting your account, please download any data or information that you wish to retain.</p>
-
-                <form method="post" action="{{ route('profile.destroy') }}">
-                    @csrf
-                    @method('delete')
-
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input id="password" name="password" type="password" autocomplete="current-password" />
-                        @error('password')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div class="flex gap-4">
-                        <button type="submit" class="btn btn-danger">Delete Account</button>
-                    </div>
-                </form>
-            </div>
-        </main>
+            </main>
+        </div>
     </div>
 
     <script src="{{ asset('js/dashboard_enhanced.js') }}"></script>

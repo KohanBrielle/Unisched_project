@@ -41,7 +41,12 @@
             color: #0f172a;
         }
 
-        .glass-panel { background: rgba(255, 255, 255, 0.86); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.86);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
         .dashboard-nav-link { transition: all 180ms ease; }
         .dashboard-nav-link:hover,
         .dashboard-nav-link.active {
@@ -50,29 +55,71 @@
             transform: translateY(-1px);
             box-shadow: 0 14px 35px rgba(75, 45, 140, 0.2);
         }
-        .dashboard-pill { display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 999px; padding: 0.55rem 1rem; background: rgba(133, 70, 255, 0.12); color: #4d2393; font-weight: 700; }
+
+        .dashboard-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-radius: 999px;
+            padding: 0.55rem 1rem;
+            background: rgba(133, 70, 255, 0.12);
+            color: #4d2393;
+            font-weight: 700;
+        }
+
         .primary-button,
-        .secondary-button { border: none; border-radius: 999px; padding: 0.65rem 1rem; font-weight: 800; cursor: pointer; transition: transform 180ms ease, filter 180ms ease; }
-        .primary-button { background: linear-gradient(135deg, #8546ff, #5b21b6); color: #fff; }
-        .secondary-button { background: rgba(15, 23, 42, 0.06); color: #0f172a; }
+        .secondary-button {
+            border: none;
+            border-radius: 999px;
+            padding: 0.65rem 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 180ms ease, filter 180ms ease;
+        }
+
+        .primary-button {
+            background: linear-gradient(135deg, #8546ff, #5b21b6);
+            color: #fff;
+        }
+
+        .secondary-button {
+            background: rgba(15, 23, 42, 0.06);
+            color: #0f172a;
+        }
+
         .primary-button:hover,
-        .secondary-button:hover { transform: translateY(-1px); }
-        .status-chip { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 0.15rem 0.8rem; font-size: 0.75rem; font-weight: 800; }
+        .secondary-button:hover {
+            transform: translateY(-1px);
+        }
+
+        .status-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            padding: 0.15rem 0.8rem;
+            font-size: 0.75rem;
+            font-weight: 800;
+        }
+
         .status-open { background: rgba(34, 197, 94, 0.14); color: #166534; }
         .status-closed { background: rgba(161, 161, 170, 0.18); color: #3f3f46; }
         .status-lunch_break { background: rgba(245, 158, 11, 0.18); color: #92400e; }
         .status-reserved, .status-in_use { background: rgba(133, 70, 255, 0.14); color: #5b21b6; }
+
         .progress-circle {
             position: relative;
             width: 72px;
             height: 72px;
             min-width: 72px;
         }
+
         .progress-circle svg {
             width: 72px;
             height: 72px;
             transform: rotate(-90deg);
         }
+
         .progress-circle circle {
             fill: none;
             stroke-width: 7;
@@ -81,7 +128,14 @@
             cy: 35;
             r: 30;
         }
-        .progress-circle circle:last-child { stroke: #8546ff; stroke-dasharray: 188.4; stroke-dashoffset: 188.4; transition: stroke-dashoffset 0.8s ease; }
+
+        .progress-circle circle:last-child {
+            stroke: #8546ff;
+            stroke-dasharray: 188.4;
+            stroke-dashoffset: 188.4;
+            transition: stroke-dashoffset 0.8s ease;
+        }
+
         .progress-circle .number {
             position: absolute;
             inset: 0;
@@ -91,6 +145,7 @@
             font-weight: 800;
             color: #0f172a;
         }
+
         .form-input {
             width: 100%;
             border-radius: 18px;
@@ -99,7 +154,13 @@
             padding: 0.85rem 1rem;
             color: #0f172a;
         }
-        .form-input:focus { outline: none; border-color: rgba(133, 70, 255, 0.45); box-shadow: 0 0 0 4px rgba(133,70,255,0.1); }
+
+        .form-input:focus {
+            outline: none;
+            border-color: rgba(133, 70, 255, 0.45);
+            box-shadow: 0 0 0 4px rgba(133, 70, 255, 0.1);
+        }
+
         .scan-preview {
             min-height: 260px;
             border-radius: 24px;
@@ -110,6 +171,7 @@
             background: linear-gradient(135deg, #1b1332 0%, #2d1e4b 100%);
             color: rgba(255,255,255,0.95);
         }
+
         .scan-preview .camera-icon {
             width: 56px;
             height: 56px;
@@ -149,10 +211,10 @@
                             <ul class="space-y-2">
                                 <li><a href="{{ route('dashboard') }}" class="dashboard-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700"><i class="fas fa-th-large w-4"></i><span>Facility Status Overview</span></a></li>
                                 <li><a href="{{ route('activity.reservation') }}" class="dashboard-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700"><i class="far fa-calendar-alt w-4"></i><span>Activity Center Reservation</span></a></li>
-                                <li><a href="{{ route('library.status') }}" class="dashboard-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700"><i class="fas fa-book w-4"></i><span>Library Status</span></a></li>
-                                <li><a href="{{ route('gym.status') }}" class="dashboard-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700"><i class="fas fa-dumbbell w-4"></i><span>Gym Status</span></a></li>
-                                <li><a href="{{ route('canteen.status') }}" class="dashboard-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700"><i class="fas fa-utensils w-4"></i><span>Canteen Status</span></a></li>
-                                <li><a href="{{ route('bao.status') }}" class="dashboard-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700"><i class="fas fa-building w-4"></i><span>BAO Status</span></a></li>
+                                <li><a href="{{ route('library.status') }}" class="dashboard-nav-link {{ request()->routeIs('library.status') ? 'active' : '' }} flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700"><i class="fas fa-book w-4"></i><span>Library Status</span></a></li>
+                                <li><a href="{{ route('gym.status') }}" class="dashboard-nav-link {{ request()->routeIs('gym.status') ? 'active' : '' }} flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700"><i class="fas fa-dumbbell w-4"></i><span>Gym Status</span></a></li>
+                                <li><a href="{{ route('canteen.status') }}" class="dashboard-nav-link {{ request()->routeIs('canteen.status') ? 'active' : '' }} flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700"><i class="fas fa-utensils w-4"></i><span>Canteen Status</span></a></li>
+                                <li><a href="{{ route('bao.status') }}" class="dashboard-nav-link {{ request()->routeIs('bao.status') ? 'active' : '' }} flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700"><i class="fas fa-building w-4"></i><span>BAO Status</span></a></li>
                                 <li><a href="{{ route('equipment.borrowing') }}" class="dashboard-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700"><i class="fas fa-tools w-4"></i><span>Equipment Borrowing</span></a></li>
                                 @if(auth()->user()->is_admin)
                                     <li><a href="{{ route('system.admin') }}" class="dashboard-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700"><i class="fas fa-cog w-4"></i><span>System Admin</span></a></li>
@@ -161,7 +223,7 @@
                         </nav>
                         <div class="mt-4 rounded-2xl border border-violet-100 bg-violet-50/80 px-4 py-3">
                             <p class="text-[0.68rem] font-bold uppercase tracking-[0.28em] text-violet-700">Campus pulse</p>
-                            <p class="mt-2 text-sm text-slate-600">Facility status pages now match the same polished console theme as the dashboard.</p>
+                            <p class="mt-2 text-sm text-slate-600">Monitor occupancy, attendance, and upcoming reservations from the same elevated console.</p>
                         </div>
                     </div>
                 </div>
@@ -169,6 +231,18 @@
 
             <main class="flex-1">
                 <div class="glass-panel rounded-[30px] border border-white/70 p-4 shadow-glow sm:p-6 lg:p-7">
+                    @php
+                        $upcoming = $facility->reservations()->where('status', 'approved')->where('end_time', '>', now())->orderBy('start_time')->get();
+                        $activeReservation = $facility->reservations()->where('status', 'approved')->where('start_time', '<=', now())->where('end_time', '>=', now())->exists();
+                        $displayStatus = $facility->status;
+                        if ($displayStatus === 'open' && $activeReservation) {
+                            $displayStatus = 'reserved';
+                        }
+                        $occupancyPercent = (int) round(($facility->current_occupancy / max($facility->capacity, 1)) * 100);
+                        $attendanceCount = $facility->attendanceLogs()->count();
+                        $upcomingCount = $upcoming->count();
+                    @endphp
+
                     <header class="flex flex-col gap-5 border-b border-violet-100 pb-5 xl:flex-row xl:items-center xl:justify-between">
                         <div>
                             <p class="text-[0.7rem] font-bold uppercase tracking-[0.3em] text-violet-700">{{ $facility->room_name }}</p>
@@ -176,7 +250,7 @@
                                 <h1 class="text-2xl font-bold text-slate-900 sm:text-3xl">{{ $facility->room_name }}</h1>
                                 <span class="dashboard-pill"><i class="fas fa-calendar-alt"></i> 2026 A.Y.</span>
                             </div>
-                            <p class="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">Monitor occupancy, attendance, and upcoming activity from your campus console.</p>
+                            <p class="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">Monitor occupancy, attendance, and upcoming reservations from one consistent campus console.</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-3">
                             <div class="flex items-center gap-3 rounded-full bg-white/80 px-3 py-2 shadow-sm ring-1 ring-violet-100">
@@ -197,18 +271,6 @@
                             </div>
                         </div>
                     </header>
-
-                    @php
-                        $upcoming = $facility->reservations()->where('status', 'approved')->where('end_time', '>', now())->orderBy('start_time')->get();
-                        $activeReservation = $facility->reservations()->where('status', 'approved')->where('start_time', '<=', now())->where('end_time', '>=', now())->exists();
-                        $displayStatus = $facility->status;
-                        if ($displayStatus === 'open' && $activeReservation) {
-                            $displayStatus = 'reserved';
-                        }
-                        $occupancyPercent = (int) round(($facility->current_occupancy / max($facility->capacity, 1)) * 100);
-                        $attendanceCount = $facility->attendanceLogs()->count();
-                        $upcomingCount = $upcoming->count();
-                    @endphp
 
                     <section class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                         <div class="rounded-[24px] bg-white/90 p-5 shadow-[0_18px_46px_rgba(63,31,122,0.12)] ring-1 ring-white/80">
@@ -234,7 +296,7 @@
                     </section>
 
                     <section class="mt-6 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-                        <div class="rounded-[24px] bg-white/90 p-5 shadow-[0_18px_46px_rgba(63,31,122,0.12)] ring-1 ring-white/80">
+                        <div class="rounded-[24px] bg-white/90 p-5 shadow-[0_18px_46px_rgba(63,31,122,0.12)] ring-1 ring-white/80" data-facility-id="{{ $facility->id }}">
                             <div class="flex flex-wrap items-start justify-between gap-4">
                                 <div>
                                     <p class="text-[0.68rem] font-bold uppercase tracking-[0.28em] text-violet-700">Facility snapshot</p>
@@ -243,7 +305,7 @@
                                 </div>
                                 <span class="status-chip status-{{ $displayStatus }}">{{ ucfirst($displayStatus) }}</span>
                             </div>
-                            <p class="mt-4 text-sm leading-6 text-slate-600">
+                            <p class="mt-4 text-sm leading-6 text-slate-600" data-status-message>
                                 @if($displayStatus === 'open')
                                     The facility is open and ready for walk-ins.
                                 @elseif($displayStatus === 'reserved')
@@ -261,9 +323,10 @@
                                 </div>
                                 <div class="progress-circle" data-percent="{{ $occupancyPercent }}">
                                     <svg><circle cx="35" cy="35" r="30"></circle><circle cx="35" cy="35" r="30"></circle></svg>
-                                    <div class="number">{{ $occupancyPercent }}%</div>
+                                    <div class="number" data-percent-label>{{ $occupancyPercent }}%</div>
                                 </div>
                             </div>
+                            <p class="mt-4 text-sm text-slate-600">Occupancy: <span data-occupancy>{{ $facility->current_occupancy }}</span> / {{ $facility->capacity }}</p>
                         </div>
 
                         <div class="rounded-[24px] bg-white/90 p-5 shadow-[0_18px_46px_rgba(63,31,122,0.12)] ring-1 ring-white/80">
