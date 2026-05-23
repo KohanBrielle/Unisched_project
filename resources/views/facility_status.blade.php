@@ -1,14 +1,125 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My UNISched | {{ $facility->room_name }} Status</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>My UNISched | Library Status</title>
     <link rel="stylesheet" href="{{ asset('css/dashboard_enhanced.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(180deg, #f8f5ff 0%, #eff0ff 100%);
+        }
+
+        .library-page .status-chip.status-open {
+            background: rgba(67, 179, 109, 0.12);
+            color: #2f7b55;
+        }
+
+        .library-page .status-chip.status-closed {
+            background: rgba(169, 169, 169, 0.14);
+            color: #4d4d4d;
+        }
+
+        .library-page .status-chip.status-lunch_break {
+            background: rgba(241, 196, 15, 0.16);
+            color: #8f6b06;
+        }
+
+        .library-page .status-chip.status-reserved {
+            background: rgba(95, 45, 145, 0.12);
+            color: #5b2ba2;
+        }
+
+        .library-page .status-chip.status-in_use {
+            background: rgba(124, 58, 237, 0.12);
+            color: #5b21b6;
+        }
+
+        .library-page .info-panel {
+            display: grid;
+            gap: 16px;
+            background: #faf8ff;
+            border-radius: 24px;
+            padding: 24px;
+            border: 1px solid #eee8ff;
+        }
+
+        .library-page .info-panel h3,
+        .library-page .widget-header,
+        .library-page .card-info h3 {
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+
+        .library-page .scan-preview {
+            min-height: 280px;
+            border-radius: 24px;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            text-align: center;
+            background: linear-gradient(135deg, #1b1332 0%, #2d1e4b 100%);
+            color: rgba(255,255,255,0.95);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .library-page .scan-preview .camera-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.08);
+            margin-bottom: 14px;
+            font-size: 1.2rem;
+        }
+
+        .library-page .scan-result {
+            margin-top: 12px;
+            color: #2d2055;
+            font-weight: 700;
+        }
+
+        .library-page .mb-0 {
+            margin-bottom: 0;
+        }
+
+        .library-page .scan-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .library-page textarea {
+            min-height: 160px;
+        }
+
+        .library-page .empty-state {
+            margin: 0;
+            background: #faf8ff;
+            border: 1px dashed #e7ddff;
+            border-radius: 18px;
+            padding: 18px;
+            color: var(--text-muted);
+        }
+
+        .library-page .item-title {
+            margin-bottom: 6px;
+        }
+
+        @media (max-width: 760px) {
+            .library-page .scan-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container library-page">
         <aside class="sidebar">
             <div class="logo">
                 <span class="logo-my">My</span> <span class="logo-uni">UNISched</span>
@@ -17,7 +128,7 @@
                 <ul>
                     <li><a href="{{ route('dashboard') }}"><i class="fas fa-th-large"></i> <span>Facility Status Overview</span></a></li>
                     <li><a href="{{ route('activity.reservation') }}"><i class="far fa-calendar-alt"></i> <span>Activity Center Reservation</span></a></li>
-                    <li><a href="{{ route('library.status') }}"><i class="fas fa-book"></i> <span>Library Status</span></a></li>
+                    <li class="active"><a href="{{ route('library.status') }}"><i class="fas fa-book"></i> <span>Library Status</span></a></li>
                     <li><a href="{{ route('gym.status') }}"><i class="fas fa-dumbbell"></i> <span>Gym Status</span></a></li>
                     <li><a href="{{ route('canteen.status') }}"><i class="fas fa-utensils"></i> <span>Canteen Status</span></a></li>
                     <li><a href="{{ route('bao.status') }}"><i class="fas fa-building"></i> <span>BAO Status</span></a></li>
@@ -32,10 +143,11 @@
         <main class="main-content">
             <header>
                 <div>
-                    <p class="eyebrow">Facility Status</p>
-                    <h1>{{ $facility->room_name }} Status</h1>
-                    <p class="subtitle">Review current occupancy, upcoming bookings, and stay ready to check in with your QR code.</p>
+                    <p class="eyebrow">Library Status</p>
+                    <h1>{{ $facility->room_name }}</h1>
+                    <p class="subtitle">Monitor current availability, attendance activity, and upcoming reservations in one consistent campus view.</p>
                 </div>
+
                 <div class="user-profile">
                     <span class="year-badge">2026 A.Y.</span>
                     <a href="{{ route('profile.edit') }}" class="avatar-link">
@@ -51,204 +163,89 @@
                 </div>
             </header>
 
-            <section class="facility-grid">
-                @php
-                    $upcoming = $facility->reservations()->where('status', 'approved')->where('end_time', '>', now())->orderBy('start_time')->get();
-                    $activeReservation = $facility->reservations()->where('status', 'approved')
-                        ->where('start_time', '<=', now())
-                        ->where('end_time', '>=', now())
-                        ->exists();
-                    $displayStatus = $facility->status;
-                    if ($displayStatus === 'open' && $activeReservation) {
-                        $displayStatus = 'reserved';
-                    }
-                @endphp
-                <div class="card status-card {{ $displayStatus === 'open' ? 'green' : ($displayStatus === 'closed' ? 'red' : 'yellow') }}">
+            <div class="live-status-banner">
+                <span><i class="fas fa-arrows-rotate"></i> Live status updates every 30 seconds</span>
+            </div>
+
+            @php
+                $upcoming = $facility->reservations()->where('status', 'approved')->where('end_time', '>', now())->orderBy('start_time')->get();
+                $activeReservation = $facility->reservations()->where('status', 'approved')
+                    ->where('start_time', '<=', now())
+                    ->where('end_time', '>=', now())
+                    ->exists();
+                $displayStatus = $facility->status;
+                if ($displayStatus === 'open' && $activeReservation) {
+                    $displayStatus = 'reserved';
+                }
+                $occupancyPercent = (int) round(($facility->current_occupancy / max($facility->capacity, 1)) * 100);
+                $attendanceCount = $facility->attendanceLogs()->count();
+                $upcomingCount = $upcoming->count();
+            @endphp
+
+            <div class="facility-grid">
+                <div class="card status-card status-card-{{ $displayStatus === 'open' ? 'open' : ($displayStatus === 'lunch_break' ? 'lunch' : ($displayStatus === 'closed' ? 'closed' : 'occupied')) }}" data-facility-id="{{ $facility->id }}" data-facility-name="{{ $facility->room_name }}" data-assistance-required="{{ $facility->assistance_required ? '1' : '0' }}">
                     <div class="card-info">
-                        <h3>{{ $facility->room_name }}</h3>
-                        <p>Building: {{ $facility->building }}</p>
-                        <p>Current occupancy: {{ $facility->current_occupancy }} / {{ $facility->capacity }}</p>
-                        <p>Status: <span class="status-chip status-{{ $displayStatus }}">{{ ucfirst($displayStatus) }}</span></p>
+                        <div class="card-title-row">
+                            <h3>Library Snapshot</h3>
+                            <span class="status-chip status-{{ $displayStatus }}">{{ ucfirst($displayStatus) }}</span>
+                        </div>
+                        <p>{{ $facility->building }}</p>
+                        <p class="status-message" data-status-message>
+                            {{ $displayStatus === 'open' ? 'The library is open and ready for walk-ins.' : ($displayStatus === 'reserved' ? 'A booking is active right now.' : ($displayStatus === 'lunch_break' ? 'A lunch break is currently in effect.' : 'The library is currently closed.')) }}
+                        </p>
+                        <p>Occupancy: <strong data-occupancy>{{ $facility->current_occupancy }}</strong> / {{ $facility->capacity }}</p>
                     </div>
-                    <div class="progress-circle" data-percent="{{ round(($facility->current_occupancy / max($facility->capacity, 1)) * 100) }}">
-                        <svg><circle cx="35" cy="35" r="30"></circle><circle cx="35" cy="35" r="30"></circle></svg>
-                        <div class="number">{{ round(($facility->current_occupancy / max($facility->capacity, 1)) * 100) }}%</div>
+                    <div class="progress-circle" data-percent="{{ $occupancyPercent }}">
+                        <svg><circle cx="35" cy="35" r="30"></circle><circle cx="35" cy="35" r="30"></svg>
+                        <div class="number" data-percent-label>{{ $occupancyPercent }}%</div>
                     </div>
                 </div>
 
-                @if($facility->room_name !== 'Canteen')
-                    <div class="widget">
-                        <div class="widget-header">Recent Attendance Logs</div>
-                        @if($facility->attendanceLogs()->count() === 0)
-                            <p class="empty-state">No attendance logs available.</p>
+                <div class="widget info-panel">
+                    <div>
+                        <div class="widget-header">
+                            <span>Recent Attendance Logs</span>
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                        @if($attendanceCount === 0)
+                            <p class="empty-state">No attendance logs are available yet. Once students check in, their recent activity will appear here.</p>
                         @else
                             <ul class="list-clean">
                                 @foreach($facility->attendanceLogs()->latest()->take(5)->get() as $log)
                                     <li>
-                                        <div class="item-title">{{ $log->user->name }}</div>
-                                        <p class="item-subtitle">Checked in at {{ $log->time_in->format('H:i') }}@if($log->time_out) – out at {{ $log->time_out->format('H:i') }}@endif</p>
+                                        <p class="item-title">{{ $log->user->name }}</p>
+                                        <p class="item-subtitle">@if($log->time_out) Checked out at {{ $log->time_out->format('H:i') }} @else Still in the library @endif</p>
                                     </li>
                                 @endforeach
                             </ul>
                         @endif
                     </div>
-                @endif
-
-                <div class="widget">
-                    <div class="widget-header">Upcoming Bookings</div>
-                    @if($upcoming->isEmpty())
-                        <p class="empty-state">No upcoming approved reservations scheduled.</p>
-                    @else
-                        <ul class="list-clean">
-                            @foreach($upcoming as $reservation)
-                                <li>
-                                    <div class="item-title">{{ $reservation->user->name }}</div>
-                                    <p class="item-subtitle">{{ $reservation->start_time->format('M d, H:i') }} — {{ $reservation->end_time->format('H:i') }}</p>
-                                </li>
-                            @endforeach
-                        </ul>
-                    @endif
                 </div>
 
-                <div class="widget">
-                    <div class="widget-header">Check In / Check Out</div>
-                    <p class="empty-state" style="margin-bottom: 16px;">Use your camera to scan the QR code, or paste the payload manually.</p>
-
-                    <div id="scanner-container" style="margin-bottom: 16px;">
-                        <video id="qr-video" playsinline style="width:100%; border-radius:12px; background:#000; display:none;"></video>
-                        <canvas id="qr-canvas" style="display:none;"></canvas>
-                        <div style="display:flex; gap:10px; margin-top: 12px; flex-wrap:wrap;">
-                            <button id="start-scan" type="button" class="btn" style="flex:1;">Start Camera Scan</button>
-                            <button id="stop-scan" type="button" class="btn" style="flex:1; background:#dc2626;">Stop Camera</button>
+                <div class="widget info-panel">
+                    <div>
+                        <div class="widget-header">
+                            <span>Upcoming Bookings</span>
+                            <i class="fas fa-calendar-check"></i>
                         </div>
+                        @if($upcomingCount === 0)
+                            <p class="empty-state">No approved bookings are scheduled right now. The next reservation will appear here automatically.</p>
+                        @else
+                            <ul class="list-clean">
+                                @foreach($upcoming as $reservation)
+                                    <li>
+                                        <p class="item-title">{{ $reservation->user->name }}</p>
+                                        <p class="item-subtitle">{{ $reservation->start_time->format('M d, H:i') }} � {{ $reservation->end_time->format('H:i') }}</p>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
                     </div>
-
-                    <label for="qr-data-input" style="display:block; margin-bottom:8px; font-weight:600;">Manual QR Payload</label>
-                    <textarea id="qr-data-input" rows="4" style="width:100%; padding:12px; border:1px solid #d1d5db; border-radius:8px; resize:vertical;" placeholder='Paste JSON payload from your QR code, e.g. {"student_id":"2024-12345","user_id":1}'></textarea>
-                    <button id="scan-button" class="btn" style="margin-top:16px; width:100%;">Submit Payload</button>
-                    <div id="scan-result" class="empty-state" style="margin-top: 16px;"></div>
                 </div>
-            </section>
+            </div>
         </main>
     </div>
+
     <script src="{{ asset('js/dashboard_enhanced.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-    <script>
-        const video = document.getElementById('qr-video');
-        const canvas = document.getElementById('qr-canvas');
-        const scanResult = document.getElementById('scan-result');
-        const startButton = document.getElementById('start-scan');
-        const stopButton = document.getElementById('stop-scan');
-        let scanning = false;
-        let videoStream = null;
-        let scanAnimationFrame = null;
-
-        function showMessage(message, color = '#111') {
-            scanResult.innerText = message;
-            scanResult.style.color = color;
-        }
-
-        function stopCamera() {
-            scanning = false;
-            video.style.display = 'none';
-            if (videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
-                videoStream = null;
-            }
-            if (scanAnimationFrame) {
-                cancelAnimationFrame(scanAnimationFrame);
-            }
-        }
-
-        async function startCameraScan() {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                showMessage('Camera API not supported in this browser.', '#b32f2d');
-                return;
-            }
-
-            try {
-                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                video.srcObject = videoStream;
-                video.setAttribute('playsinline', true);
-                video.style.display = 'block';
-                await video.play();
-                scanning = true;
-                scanResult.innerText = 'Scanning for QR code...';
-                scanFrame();
-            } catch (error) {
-                console.error('Camera error:', error);
-                showMessage('Unable to access camera. Please allow camera permission or use manual payload.', '#b32f2d');
-            }
-        }
-
-        function scanFrame() {
-            if (!scanning) return;
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                const width = video.videoWidth;
-                const height = video.videoHeight;
-                canvas.width = width;
-                canvas.height = height;
-                const context = canvas.getContext('2d');
-                context.drawImage(video, 0, 0, width, height);
-                const imageData = context.getImageData(0, 0, width, height);
-                const code = jsQR(imageData.data, width, height, { inversionAttempts: 'attemptBoth' });
-
-                if (code && code.data) {
-                    stopCamera();
-                    submitScan(code.data);
-                    return;
-                }
-            }
-            scanAnimationFrame = requestAnimationFrame(scanFrame);
-        }
-
-        function submitScan(qrData) {
-            showMessage('Submitting scan...', '#1a56db');
-            fetch('{{ route('facility.scan') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    facility_id: {{ $facility->id }},
-                    qr_data: qrData,
-                })
-            })
-            .then(async response => {
-                let data;
-                try {
-                    data = await response.json();
-                } catch (e) {
-                    throw new Error('Server returned an error: ' + response.status);
-                }
-                if (response.ok) {
-                    showMessage(data.message || 'Scan successful.', '#2f7b55');
-                    setTimeout(() => window.location.reload(), 1200);
-                } else {
-                    showMessage(data.error || data.message || 'Scan failed.', '#b32f2d');
-                }
-            })
-            .catch(error => {
-                console.error('Scan submission error:', error);
-                showMessage('An error occurred while submitting the scan.', '#b32f2d');
-            });
-        }
-
-        document.getElementById('scan-button').addEventListener('click', function() {
-            const qrData = document.getElementById('qr-data-input').value.trim();
-            if (!qrData) {
-                showMessage('Please paste the QR code payload first.', '#b32f2d');
-                return;
-            }
-            submitScan(qrData);
-        });
-
-        startButton.addEventListener('click', startCameraScan);
-        stopButton.addEventListener('click', stopCamera);
-
-        window.addEventListener('beforeunload', stopCamera);
-    </script>
 </body>
 </html>

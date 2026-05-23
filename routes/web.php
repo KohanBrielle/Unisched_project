@@ -163,6 +163,8 @@ Route::middleware(['auth', 'verified', 'nocache'])->group(function () {
     })->name('mobile.booking');
 
     Route::post('/facility/scan', [FacilityController::class, 'scan'])->name('facility.scan');
+    Route::get('/api/facilities/status', [FacilityController::class, 'status'])->name('api.facilities.status');
+    Route::post('/facility/assistance', [FacilityController::class, 'submitAssistance'])->name('facility.assistance');
 
     Route::post('/reservations', function (Request $request) {
         $request->validate([
@@ -278,8 +280,10 @@ Route::middleware(['auth', 'verified', 'admin', 'nocache'])->group(function () {
     Route::post('/admin/users/{id}/make-admin', [AdminController::class, 'makeAdmin']);
     Route::post('/admin/users/{id}/remove-admin', [AdminController::class, 'removeAdmin']);
     Route::delete('/admin/users/{id}', [AdminController::class, 'deleteUser']);
+    Route::post('/admin/facilities', [AdminController::class, 'storeFacility'])->name('admin.facilities.store');
     Route::delete('/admin/facilities/{id}', [AdminController::class, 'deleteFacility']);
     Route::patch('/admin/facilities/{id}', [AdminController::class, 'updateFacility']);
+    Route::post('/admin/assistance-requests/{id}/resolve', [AdminController::class, 'resolveAssistanceRequest'])->name('admin.assistance.resolve');
     Route::post('/admin/reservations/{id}/approve', [AdminController::class, 'approveReservation']);
     Route::post('/admin/reservations/{id}/reject', [AdminController::class, 'rejectReservation']);
     Route::delete('/admin/reservations/{id}', [AdminController::class, 'deleteReservation']);
