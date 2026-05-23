@@ -73,8 +73,46 @@ class AdminController extends Controller
         return view('admin_dashboard', $data);
     }
 
+    protected function normalizeTimeFields(Request $request): void
+    {
+        foreach (['opening_time', 'closing_time', 'lunch_start', 'lunch_end'] as $timeField) {
+            if (! array_key_exists($timeField, $request->all())) {
+                continue;
+            }
+
+            $request->merge([
+                $timeField => $this->normalizeTimeValue($request->input($timeField)),
+            ]);
+        }
+    }
+
+    protected function normalizeTimeValue(mixed $value): mixed
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (! is_string($value)) {
+            return $value;
+        }
+
+        $normalized = trim($value);
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        if (preg_match('/^\d{2}:\d{2}:\d{2}$/', $normalized) === 1) {
+            return substr($normalized, 0, 5);
+        }
+
+        return $normalized;
+    }
+
     public function storeFacility(Request $request)
     {
+        $this->normalizeTimeFields($request);
+
         $validated = $request->validate([
             'room_name' => 'required|string|max:255',
             'building' => 'required|string|max:255',
@@ -87,12 +125,6 @@ class AdminController extends Controller
             'lunch_end' => 'nullable|date_format:H:i',
             'lunch_mode' => 'sometimes|in:scheduled,disabled',
         ]);
-
-        foreach (['opening_time', 'closing_time', 'lunch_start', 'lunch_end'] as $timeField) {
-            if ($request->has($timeField)) {
-                $validated[$timeField] = $request->input($timeField) ?: null;
-            }
-        }
 
         $validated['is_borrowable'] = filter_var($validated['is_borrowable'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $validated['status'] = 'open';
@@ -282,6 +314,8 @@ class AdminController extends Controller
     {
         $facility = Facility::findOrFail($facilityId);
 
+        $this->normalizeTimeFields($request);
+
         $validated = $request->validate([
             'room_name' => 'sometimes|string|max:255',
             'building' => 'sometimes|string|max:255',
@@ -294,12 +328,6 @@ class AdminController extends Controller
             'lunch_end' => 'nullable|date_format:H:i',
             'lunch_mode' => 'sometimes|in:scheduled,disabled',
         ]);
-
-        foreach (['opening_time', 'closing_time', 'lunch_start', 'lunch_end'] as $timeField) {
-            if ($request->has($timeField)) {
-                $validated[$timeField] = $request->input($timeField) ?: null;
-            }
-        }
 
         $capacity = $validated['capacity'] ?? $facility->capacity;
         $currentOccupancy = $validated['current_occupancy'] ?? $facility->current_occupancy;
@@ -327,6 +355,17 @@ class AdminController extends Controller
         $request->save();
 
         return response()->json(['message' => 'Assistance request resolved']);
+    }
+
+    public function clearResolvedAssistanceRequest($id)
+    {
+        $request = AssistanceRequest::where('id', $id)
+            ->where('status', 'resolved')
+            ->firstOrFail();
+
+        $request->delete();
+
+        return response()->json(['message' => 'Resolved assistance request cleared']);
     }
 
     public function clearReservationHistory(Request $request)

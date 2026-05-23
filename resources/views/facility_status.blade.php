@@ -233,11 +233,8 @@
                 <div class="glass-panel rounded-[30px] border border-white/70 p-4 shadow-glow sm:p-6 lg:p-7">
                     @php
                         $upcoming = $facility->reservations()->where('status', 'approved')->where('end_time', '>', now())->orderBy('start_time')->get();
-                        $activeReservation = $facility->reservations()->where('status', 'approved')->where('start_time', '<=', now())->where('end_time', '>=', now())->exists();
-                        $displayStatus = $facility->status;
-                        if ($displayStatus === 'open' && $activeReservation) {
-                            $displayStatus = 'reserved';
-                        }
+                        $displayStatus = $facility->computed_status;
+                        $isClosed = $displayStatus === 'closed';
                         $occupancyPercent = (int) round(($facility->current_occupancy / max($facility->capacity, 1)) * 100);
                         $attendanceCount = $facility->attendanceLogs()->count();
                         $upcomingCount = $upcoming->count();
@@ -306,15 +303,7 @@
                                 <span class="status-chip status-{{ $displayStatus }}">{{ ucfirst($displayStatus) }}</span>
                             </div>
                             <p class="mt-4 text-sm leading-6 text-slate-600" data-status-message>
-                                @if($displayStatus === 'open')
-                                    The facility is open and ready for walk-ins.
-                                @elseif($displayStatus === 'reserved')
-                                    A booking is active right now.
-                                @elseif($displayStatus === 'lunch_break')
-                                    A lunch break is currently in effect.
-                                @else
-                                    The facility is currently closed.
-                                @endif
+                                {{ $facility->status_message }}
                             </p>
                             <div class="mt-4 flex items-center justify-between gap-4 rounded-[20px] bg-violet-50/80 px-4 py-3">
                                 <div>
@@ -356,7 +345,7 @@
                                     @foreach($upcoming as $reservation)
                                         <li class="rounded-[18px] bg-violet-50/70 px-4 py-3">
                                             <p class="font-bold text-slate-900">{{ $reservation->user->name }}</p>
-                                            <p class="mt-1 text-sm text-slate-600">{{ $reservation->start_time->format('M d, H:i') }} — {{ $reservation->end_time->format('H:i') }}</p>
+                                            <p class="mt-1 text-sm text-slate-600">{{ $reservation->start_time->format('M d, H:i') }} ï¿½ {{ $reservation->end_time->format('H:i') }}</p>
                                         </li>
                                     @endforeach
                                 </ul>
@@ -379,16 +368,19 @@
                                 </div>
                             </div>
                             <div class="mt-4 flex flex-wrap gap-3">
-                                <button id="start-scan" type="button" class="primary-button"><i class="fas fa-camera"></i> Start Camera Scan</button>
-                                <button id="stop-scan" type="button" class="secondary-button"><i class="fas fa-power-off"></i> Stop Camera</button>
+                                <button id="start-scan" type="button" class="primary-button" {{ $isClosed ? 'disabled' : '' }}><i class="fas fa-camera"></i> Start Camera Scan</button>
+                                <button id="stop-scan" type="button" class="secondary-button" {{ $isClosed ? 'disabled' : '' }}><i class="fas fa-power-off"></i> Stop Camera</button>
                             </div>
+                            @if($isClosed)
+                                <p class="mt-4 text-sm text-rose-700">This facility is currently closed and cannot accept QR scans, check-ins, or check-outs.</p>
+                            @endif
                         </div>
 
                         <div class="rounded-[24px] bg-white/90 p-5 shadow-[0_18px_46px_rgba(63,31,122,0.12)] ring-1 ring-white/80">
                             <p class="text-[0.68rem] font-bold uppercase tracking-[0.28em] text-violet-700">Manual QR Payload</p>
                             <label for="qr-data-input" class="mt-4 mb-2 block text-sm font-semibold text-slate-700">Paste the QR payload here</label>
-                            <textarea id="qr-data-input" class="form-input min-h-[160px]" placeholder='Paste JSON payload here, e.g. {"student_id":"2024-12345","user_id":1}'></textarea>
-                            <button id="scan-button" type="button" class="primary-button mt-4 w-full">Submit Payload</button>
+                            <textarea id="qr-data-input" class="form-input min-h-[160px]" placeholder='Paste JSON payload here, e.g. {"student_id":"2024-12345","user_id":1}' {{ $isClosed ? 'disabled' : '' }}></textarea>
+                            <button id="scan-button" type="button" class="primary-button mt-4 w-full" {{ $isClosed ? 'disabled' : '' }}>Submit Payload</button>
                             <p id="scan-result" class="mt-4 text-sm text-slate-600">Scan status will appear here after the camera or manual payload is used.</p>
                         </div>
                     </section>
@@ -409,6 +401,9 @@
         const startButton = document.getElementById('start-scan');
         const stopButton = document.getElementById('stop-scan');
         const placeholder = document.querySelector('.scan-preview');
+        const qrInput = document.getElementById('qr-data-input');
+        const scanButton = document.getElementById('scan-button');
+        const isClosed = {{ $isClosed ? 'true' : 'false' }};
         let scanning = false;
         let videoStream = null;
         let scanAnimationFrame = null;
@@ -416,6 +411,15 @@
         function showMessage(message, color = '#0f172a') {
             scanResult.innerText = message;
             scanResult.style.color = color;
+        }
+
+        if (isClosed) {
+            stopCamera();
+            showMessage('This facility is currently closed and cannot accept QR scans, check-ins, or check-outs.', '#b32f2d');
+            startButton.disabled = true;
+            stopButton.disabled = true;
+            scanButton.disabled = true;
+            qrInput.disabled = true;
         }
 
         function stopCamera() {
@@ -480,6 +484,11 @@
         }
 
         function submitScan(qrData) {
+            if (isClosed) {
+                showMessage('This facility is currently closed and cannot accept QR scans, check-ins, or check-outs.', '#b32f2d');
+                return;
+            }
+
             showMessage('Submitting scan...', '#1d4ed8');
             fetch('{{ route('facility.scan') }}', {
                 method: 'POST',

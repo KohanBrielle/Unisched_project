@@ -342,19 +342,23 @@
                                 </label>
                                 <label class="block">
                                     <span class="mb-2 block text-sm font-semibold text-slate-700">Opening Time</span>
-                                    <input type="time" id="opening_time" name="opening_time" value="07:00" class="w-full rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm outline-none transition focus:border-violet-300 focus:ring-2 focus:ring-violet-100">
+                                    <input type="time" id="opening_time" name="opening_time" class="w-full rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm outline-none transition focus:border-violet-300 focus:ring-2 focus:ring-violet-100">
+                                    <span class="mt-1 block text-xs text-slate-500">Optional</span>
                                 </label>
                                 <label class="block">
                                     <span class="mb-2 block text-sm font-semibold text-slate-700">Closing Time</span>
-                                    <input type="time" id="closing_time" name="closing_time" value="17:00" class="w-full rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm outline-none transition focus:border-violet-300 focus:ring-2 focus:ring-violet-100">
+                                    <input type="time" id="closing_time" name="closing_time" class="w-full rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm outline-none transition focus:border-violet-300 focus:ring-2 focus:ring-violet-100">
+                                    <span class="mt-1 block text-xs text-slate-500">Optional</span>
                                 </label>
                                 <label class="block">
                                     <span class="mb-2 block text-sm font-semibold text-slate-700">Lunch Start</span>
-                                    <input type="time" id="lunch_start" name="lunch_start" value="12:00" class="w-full rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm outline-none transition focus:border-violet-300 focus:ring-2 focus:ring-violet-100">
+                                    <input type="time" id="lunch_start" name="lunch_start" class="w-full rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm outline-none transition focus:border-violet-300 focus:ring-2 focus:ring-violet-100">
+                                    <span class="mt-1 block text-xs text-slate-500">Optional</span>
                                 </label>
                                 <label class="block">
                                     <span class="mb-2 block text-sm font-semibold text-slate-700">Lunch End</span>
-                                    <input type="time" id="lunch_end" name="lunch_end" value="13:00" class="w-full rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm outline-none transition focus:border-violet-300 focus:ring-2 focus:ring-violet-100">
+                                    <input type="time" id="lunch_end" name="lunch_end" class="w-full rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm outline-none transition focus:border-violet-300 focus:ring-2 focus:ring-violet-100">
+                                    <span class="mt-1 block text-xs text-slate-500">Optional</span>
                                 </label>
                                 <label class="block">
                                     <span class="mb-2 block text-sm font-semibold text-slate-700">Lunch Mode</span>
@@ -412,10 +416,10 @@
                                                             data-building="{{ $facility->building }}"
                                                             data-capacity="{{ $facility->capacity }}"
                                                             data-current-occupancy="{{ $facility->current_occupancy }}"
-                                                            data-opening-time="{{ $facility->opening_time ?? '' }}"
-                                                            data-closing-time="{{ $facility->closing_time ?? '' }}"
-                                                            data-lunch-start="{{ $facility->lunch_start ?? '' }}"
-                                                            data-lunch-end="{{ $facility->lunch_end ?? '' }}"
+                                                            data-opening-time="{{ is_string($facility->opening_time) ? substr($facility->opening_time, 0, 5) : '' }}"
+                                                            data-closing-time="{{ is_string($facility->closing_time) ? substr($facility->closing_time, 0, 5) : '' }}"
+                                                            data-lunch-start="{{ is_string($facility->lunch_start) ? substr($facility->lunch_start, 0, 5) : '' }}"
+                                                            data-lunch-end="{{ is_string($facility->lunch_end) ? substr($facility->lunch_end, 0, 5) : '' }}"
                                                             data-lunch-mode="{{ $facility->lunch_mode ?? 'scheduled' }}"
                                                             data-status="{{ $facility->computed_status }}">
                                                             Edit
@@ -715,43 +719,82 @@
 
                     <section id="assistance" class="admin-tab-pane pt-6">
                         <div class="rounded-[28px] bg-white/90 p-5 shadow-[0_18px_46px_rgba(63,31,122,0.12)] ring-1 ring-white/80 sm:p-6">
-                            <p class="text-sm font-semibold text-violet-700">Facility Assistance Requests</p>
-                            <h2 class="mt-1 text-lg font-bold text-slate-900">Resolve support tickets quickly</h2>
-                            <div class="mt-4 overflow-x-auto">
-                                <table class="min-w-full divide-y divide-violet-100">
-                                    <thead>
-                                        <tr class="text-left text-sm text-slate-500">
-                                            <th class="px-3 py-3 font-semibold">User</th>
-                                            <th class="px-3 py-3 font-semibold">Facility</th>
-                                            <th class="px-3 py-3 font-semibold">Message</th>
-                                            <th class="px-3 py-3 font-semibold">Submitted</th>
-                                            <th class="px-3 py-3 font-semibold">Status</th>
-                                            <th class="px-3 py-3 font-semibold">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-violet-100 text-sm text-slate-700">
-                                        @forelse($assistanceRequests as $request)
-                                            <tr>
-                                                <td class="px-3 py-3">{{ $request->user->name ?? 'Unknown user' }}</td>
-                                                <td class="px-3 py-3">{{ $request->facility->room_name ?? 'Unknown facility' }}</td>
-                                                <td class="px-3 py-3">{{ $request->message }}</td>
-                                                <td class="px-3 py-3">{{ optional($request->created_at)->format('M d, Y H:i') ?? 'Unknown' }}</td>
-                                                <td class="px-3 py-3">
-                                                    <span class="rounded-full px-3 py-1 text-xs font-bold {{ $request->status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700' }}">{{ ucfirst($request->status) }}</span>
-                                                </td>
-                                                <td class="px-3 py-3">
-                                                    @if($request->status !== 'resolved')
-                                                        <button type="button" onclick="resolveAssistance({{ $request->id }})" class="action-btn rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-bold text-emerald-700">Resolve</button>
-                                                    @else
-                                                        <span class="text-sm text-slate-500">Resolved</span>
-                                                    @endif
-                                                </td>
-                                            </tr>
-                                        @empty
-                                            <tr><td colspan="6" class="px-3 py-6 text-center text-slate-500">No assistance requests have been submitted.</td></tr>
-                                        @endforelse
-                                    </tbody>
-                                </table>
+                            <div class="flex flex-wrap items-start justify-between gap-4">
+                                <div>
+                                    <p class="text-sm font-semibold text-violet-700">Facility Assistance Requests</p>
+                                    <h2 class="mt-1 text-lg font-bold text-slate-900">Facility assistance request history</h2>
+                                    <p class="mt-2 text-sm text-slate-500">Review support requests by facility and date, and resolve pending issues quickly.</p>
+                                </div>
+                                <div class="rounded-[24px] bg-violet-50 px-4 py-3 text-sm text-violet-900">
+                                    <p class="font-semibold">{{ $assistanceRequests->where('status', 'pending')->count() }} pending</p>
+                                    <p class="text-violet-700">{{ $assistanceRequests->where('status', 'resolved')->count() }} resolved</p>
+                                </div>
+                            </div>
+
+                            @php
+                                $assistanceRequestsByFacility = $assistanceRequests->groupBy('facility_id');
+                            @endphp
+
+                            <div class="mt-5 space-y-4">
+                                @forelse($facilities as $facility)
+                                    @php
+                                        $facilityRequests = $assistanceRequestsByFacility->get($facility->id, collect());
+                                        $groupedByDay = $facilityRequests->groupBy(fn ($request) => optional($request->created_at)->format('Y-m-d'));
+                                    @endphp
+
+                                    <div class="rounded-[24px] border border-violet-100 bg-slate-50/80 p-4">
+                                        <div class="flex flex-wrap items-center justify-between gap-4">
+                                            <div>
+                                                <p class="text-sm font-semibold text-violet-700">{{ $facility->room_name }}</p>
+                                                <p class="text-sm text-slate-500">{{ $facility->building }}</p>
+                                            </div>
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">{{ $facilityRequests->where('status', 'pending')->count() }} pending</span>
+                                                <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">{{ $facilityRequests->where('status', 'resolved')->count() }} resolved</span>
+                                            </div>
+                                        </div>
+
+                                        @if($facilityRequests->isEmpty())
+                                            <p class="mt-4 text-sm text-slate-500">No assistance requests have been submitted for this facility yet.</p>
+                                        @else
+                                            <div class="mt-4 space-y-3">
+                                                @foreach($groupedByDay as $day => $requestsForDay)
+                                                    <div class="rounded-[20px] bg-white px-4 py-3 ring-1 ring-violet-100">
+                                                        <div class="flex flex-wrap items-center justify-between gap-3">
+                                                            <p class="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">{{ \Illuminate\Support\Carbon::parse($day)->format('M d, Y') }}</p>
+                                                            <p class="text-sm text-slate-500">{{ $requestsForDay->count() }} request{{ $requestsForDay->count() === 1 ? '' : 's' }}</p>
+                                                        </div>
+                                                        <div class="mt-3 space-y-2">
+                                                            @foreach($requestsForDay->sortByDesc('created_at') as $request)
+                                                                <div class="flex flex-wrap items-start justify-between gap-4 rounded-[18px] bg-slate-50 px-3 py-3">
+                                                                    <div class="min-w-[180px]">
+                                                                        <p class="font-semibold text-slate-900">{{ $request->user->name ?? 'Unknown user' }}</p>
+                                                                        <p class="text-sm text-slate-500">{{ optional($request->created_at)->format('H:i') }} • {{ optional($request->created_at)->diffForHumans() }}</p>
+                                                                    </div>
+                                                                    <div class="flex-1">
+                                                                        <p class="text-sm leading-6 text-slate-700">{{ $request->message }}</p>
+                                                                    </div>
+                                                                    <div class="flex flex-col items-end gap-2">
+                                                                        <span class="rounded-full px-3 py-1 text-xs font-bold {{ $request->status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700' }}">{{ ucfirst($request->status) }}</span>
+                                                                        @if($request->status !== 'resolved')
+                                                                            <button type="button" onclick="resolveAssistance({{ $request->id }})" class="action-btn rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-bold text-emerald-700">Resolve</button>
+                                                                        @else
+                                                                            <button type="button" onclick="clearResolvedAssistance({{ $request->id }})" class="action-btn rounded-full bg-rose-100 px-3 py-1.5 text-xs font-bold text-rose-700">Clear</button>
+                                                                        @endif
+                                                                    </div>
+                                                                </div>
+                                                            @endforeach
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
+                                @empty
+                                    <div class="rounded-[24px] border border-dashed border-violet-100 bg-white px-4 py-6 text-center">
+                                        <p class="text-sm text-slate-500">No assistance requests have been submitted.</p>
+                                    </div>
+                                @endforelse
                             </div>
                         </div>
                     </section>
@@ -832,18 +875,45 @@
     <script>
         const tabs = document.querySelectorAll('.admin-tab');
         const panes = document.querySelectorAll('.admin-tab-pane');
+        const activeTabStorageKey = 'admin-console-active-tab';
+
+        function activateTab(targetId) {
+            const targetTab = Array.from(tabs).find((item) => item.dataset.target === targetId);
+            const targetPane = document.getElementById(targetId);
+
+            if (!targetTab || !targetPane) {
+                return;
+            }
+
+            tabs.forEach((item) => item.classList.remove('active'));
+            panes.forEach((pane) => pane.classList.remove('active'));
+
+            targetTab.classList.add('active');
+            targetPane.classList.add('active');
+            sessionStorage.setItem(activeTabStorageKey, targetId);
+        }
+
+        function restoreActiveTab() {
+            const savedTab = sessionStorage.getItem(activeTabStorageKey);
+
+            if (savedTab && document.getElementById(savedTab)) {
+                activateTab(savedTab);
+                return;
+            }
+
+            const defaultTab = document.querySelector('.admin-tab.active')?.dataset.target;
+            if (defaultTab) {
+                sessionStorage.setItem(activeTabStorageKey, defaultTab);
+            }
+        }
 
         tabs.forEach((tab) => {
             tab.addEventListener('click', () => {
-                tabs.forEach((item) => item.classList.remove('active'));
-                panes.forEach((pane) => pane.classList.remove('active'));
-                tab.classList.add('active');
-                const target = document.getElementById(tab.dataset.target);
-                if (target) {
-                    target.classList.add('active');
-                }
+                activateTab(tab.dataset.target);
             });
         });
+
+        restoreActiveTab();
 
         function jsonHeaders() {
             return {
@@ -869,6 +939,11 @@
         }
 
         async function reloadAfterAction(message) {
+            const activeTab = document.querySelector('.admin-tab.active')?.dataset.target;
+            if (activeTab) {
+                sessionStorage.setItem(activeTabStorageKey, activeTab);
+            }
+
             alert(message);
             window.location.reload();
         }
@@ -934,6 +1009,19 @@
             try {
                 const data = await apiRequest('{{ route('admin.assistance.resolve', ['id' => '__ID__']) }}'.replace('__ID__', assistanceId), { method: 'POST' });
                 await reloadAfterAction(data.message || 'Assistance request resolved.');
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        async function clearResolvedAssistance(assistanceId) {
+            if (!confirm('Remove this resolved assistance request from the history?')) {
+                return;
+            }
+
+            try {
+                const data = await apiRequest('{{ route('admin.assistance.clear', ['id' => '__ID__']) }}'.replace('__ID__', assistanceId), { method: 'DELETE' });
+                await reloadAfterAction(data.message || 'Resolved assistance request cleared.');
             } catch (error) {
                 alert(error.message);
             }

@@ -58,16 +58,160 @@ class AdminFacilityFlowTest extends TestCase
             'room_name' => 'ENB Room 301',
             'building' => 'ENB Building',
             'is_borrowable' => true,
-            'opening_time' => '07:30:00',
-            'lunch_start' => '12:00:00',
-            'lunch_end' => '13:00:00',
-            'closing_time' => '17:00:00',
+            'opening_time' => '07:30',
+            'lunch_start' => '12:00',
+            'lunch_end' => '13:00',
+            'closing_time' => '17:00',
         ]);
 
         $adminPage = $this->actingAs($admin)->get('/system-admin');
         $adminPage->assertStatus(200)
             ->assertSee('Facility Management')
             ->assertSee('ENB Room 301');
+    }
+
+    public function test_admin_can_create_a_facility_with_optional_times_left_blank(): void
+    {
+        $admin = User::factory()->create([
+            'is_admin' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->withSession(['_token' => 'test-token'])
+            ->withHeaders([
+                'X-CSRF-TOKEN' => 'test-token',
+                'X-Requested-With' => 'XMLHttpRequest',
+            ])
+            ->postJson('/admin/facilities', [
+                'room_name' => 'Optional Times Lab',
+                'building' => 'Engineering Wing',
+                'capacity' => 24,
+                'current_occupancy' => 0,
+                'opening_time' => '',
+                'closing_time' => '',
+                'lunch_start' => '',
+                'lunch_end' => '',
+                'lunch_mode' => 'scheduled',
+            ]);
+
+        $response->assertSuccessful();
+
+        $facility = Facility::where('room_name', 'Optional Times Lab')->firstOrFail();
+
+        $this->assertNull($facility->opening_time);
+        $this->assertNull($facility->closing_time);
+        $this->assertNull($facility->lunch_start);
+        $this->assertNull($facility->lunch_end);
+    }
+
+    public function test_admin_can_update_a_facility_and_clear_optional_times(): void
+    {
+        $admin = User::factory()->create([
+            'is_admin' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $facility = Facility::create([
+            'room_name' => 'Editable Lab',
+            'building' => 'Engineering Wing',
+            'capacity' => 20,
+            'is_borrowable' => false,
+            'current_occupancy' => 0,
+            'status' => 'open',
+            'status_overridden' => false,
+            'opening_time' => '07:00:00',
+            'closing_time' => '17:00:00',
+            'lunch_start' => '12:00:00',
+            'lunch_end' => '13:00:00',
+            'lunch_mode' => 'scheduled',
+            'operating_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->withSession(['_token' => 'test-token'])
+            ->withHeaders([
+                'X-CSRF-TOKEN' => 'test-token',
+                'X-Requested-With' => 'XMLHttpRequest',
+            ])
+            ->patchJson('/admin/facilities/' . $facility->id, [
+                'room_name' => 'Editable Lab',
+                'building' => 'Engineering Wing',
+                'capacity' => 20,
+                'current_occupancy' => 0,
+                'opening_time' => '',
+                'closing_time' => '',
+                'lunch_start' => '',
+                'lunch_end' => '',
+                'lunch_mode' => 'scheduled',
+                'status' => 'open',
+            ]);
+
+        $response->assertSuccessful();
+
+        $facility->refresh();
+
+        $this->assertNull($facility->opening_time);
+        $this->assertNull($facility->closing_time);
+        $this->assertNull($facility->lunch_start);
+        $this->assertNull($facility->lunch_end);
+    }
+
+    public function test_admin_can_update_facility_times_when_the_payload_uses_seconds(): void
+    {
+        $admin = User::factory()->create([
+            'is_admin' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $facility = Facility::create([
+            'room_name' => 'Lab A',
+            'building' => 'Engineering Wing',
+            'capacity' => 20,
+            'is_borrowable' => false,
+            'current_occupancy' => 0,
+            'status' => 'open',
+            'status_overridden' => false,
+            'opening_time' => '07:00:00',
+            'closing_time' => '17:00:00',
+            'lunch_start' => '12:00:00',
+            'lunch_end' => '13:00:00',
+            'lunch_mode' => 'scheduled',
+            'operating_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->withSession(['_token' => 'test-token'])
+            ->withHeaders([
+                'X-CSRF-TOKEN' => 'test-token',
+                'X-Requested-With' => 'XMLHttpRequest',
+            ])
+            ->patchJson('/admin/facilities/' . $facility->id, [
+                'room_name' => 'Lab A',
+                'building' => 'Engineering Wing',
+                'capacity' => 20,
+                'current_occupancy' => 0,
+                'opening_time' => '08:00:00',
+                'closing_time' => '18:00:00',
+                'lunch_start' => '12:30:00',
+                'lunch_end' => '13:30:00',
+                'lunch_mode' => 'scheduled',
+                'status' => 'open',
+            ]);
+
+        $response->assertSuccessful()
+            ->assertJsonFragment([
+                'message' => 'Facility updated successfully',
+            ]);
+
+        $this->assertDatabaseHas('facilities', [
+            'id' => $facility->id,
+            'opening_time' => '08:00',
+            'closing_time' => '18:00',
+            'lunch_start' => '12:30',
+            'lunch_end' => '13:30',
+            'lunch_mode' => 'scheduled',
+        ]);
     }
 
     public function test_students_can_submit_an_assistance_request_for_a_closed_facility(): void
@@ -116,6 +260,54 @@ class AdminFacilityFlowTest extends TestCase
         ]);
         $this->assertEquals('I need the key for the library because the doors are locked.',
             AssistanceRequest::first()->message);
+    }
+
+    public function test_admin_can_clear_a_resolved_assistance_request_from_history(): void
+    {
+        $admin = User::factory()->create([
+            'is_admin' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $facility = Facility::create([
+            'room_name' => 'AV Room 1',
+            'building' => 'Media Center',
+            'capacity' => 20,
+            'is_borrowable' => false,
+            'current_occupancy' => 0,
+            'status' => 'open',
+            'status_overridden' => false,
+            'opening_time' => '07:00:00',
+            'closing_time' => '17:00:00',
+            'lunch_start' => '12:00:00',
+            'lunch_end' => '13:00:00',
+            'lunch_mode' => 'scheduled',
+            'operating_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+        ]);
+
+        $request = AssistanceRequest::create([
+            'user_id' => User::factory()->create(['email_verified_at' => now()])->id,
+            'facility_id' => $facility->id,
+            'message' => 'The projector is not responding.',
+            'status' => 'resolved',
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->withSession(['_token' => 'test-token'])
+            ->withHeaders([
+                'X-CSRF-TOKEN' => 'test-token',
+                'X-Requested-With' => 'XMLHttpRequest',
+            ])
+            ->deleteJson('/admin/assistance-requests/' . $request->id);
+
+        $response->assertSuccessful()
+            ->assertJsonFragment([
+                'message' => 'Resolved assistance request cleared',
+            ]);
+
+        $this->assertDatabaseMissing('assistance_requests', [
+            'id' => $request->id,
+        ]);
     }
 
     public function test_status_api_returns_schedule_based_messages_for_a_closed_or_lunch_state(): void
@@ -200,6 +392,35 @@ class AdminFacilityFlowTest extends TestCase
 
         $this->assertSame(0, AttendanceLog::count());
         $this->assertSame(0, $facility->fresh()->current_occupancy);
+    }
+
+    public function test_closed_facility_status_page_disables_scan_controls(): void
+    {
+        $user = User::factory()->create([
+            'email_verified_at' => now(),
+        ]);
+
+        Facility::create([
+            'room_name' => 'Library',
+            'building' => 'Academic Building',
+            'capacity' => 50,
+            'is_borrowable' => false,
+            'current_occupancy' => 0,
+            'status' => 'closed',
+            'status_overridden' => true,
+            'opening_time' => '07:00:00',
+            'closing_time' => '17:00:00',
+            'lunch_start' => '12:00:00',
+            'lunch_end' => '13:00:00',
+            'lunch_mode' => 'scheduled',
+            'operating_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+        ]);
+
+        $response = $this->actingAs($user)->get('/library-status');
+
+        $response->assertStatus(200)
+            ->assertSee('This facility is currently closed and cannot accept QR scans, check-ins, or check-outs.', false)
+            ->assertSee('disabled', false);
     }
 
     public function test_admin_overview_calendar_payload_includes_pending_and_approved_reservations(): void
