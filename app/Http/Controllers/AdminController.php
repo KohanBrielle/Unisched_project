@@ -19,10 +19,12 @@ class AdminController extends Controller
             'users' => collect(),
             'facilities' => collect(),
             'pendingReservations' => collect(),
+            'approvedReservations' => collect(),
             'borrowedEquipment' => collect(),
             'pendingBorrowRequests' => collect(),
             'returnRequests' => collect(),
             'assistanceRequests' => collect(),
+            'attendanceLogs' => collect(),
         ];
 
         try {
@@ -60,6 +62,10 @@ class AdminController extends Controller
                 ->with(['user', 'facility'])
                 ->orderByDesc('created_at')
                 ->get();
+            $data['attendanceLogs'] = \App\Models\AttendanceLog::query()
+                ->with(['user', 'facility'])
+                ->orderByDesc('time_in')
+                ->get();
         } catch (\Throwable $e) {
             Log::warning('Unable to load admin dashboard data: ' . $e->getMessage());
         }
@@ -75,12 +81,18 @@ class AdminController extends Controller
             'capacity' => 'required|integer|min:1',
             'current_occupancy' => 'required|integer|min:0',
             'is_borrowable' => 'sometimes|boolean',
-            'opening_time' => 'sometimes|date_format:H:i',
-            'closing_time' => 'sometimes|date_format:H:i',
-            'lunch_start' => 'sometimes|date_format:H:i',
-            'lunch_end' => 'sometimes|date_format:H:i',
+            'opening_time' => 'nullable|date_format:H:i',
+            'closing_time' => 'nullable|date_format:H:i',
+            'lunch_start' => 'nullable|date_format:H:i',
+            'lunch_end' => 'nullable|date_format:H:i',
             'lunch_mode' => 'sometimes|in:scheduled,disabled',
         ]);
+
+        foreach (['opening_time', 'closing_time', 'lunch_start', 'lunch_end'] as $timeField) {
+            if ($request->has($timeField)) {
+                $validated[$timeField] = $request->input($timeField) ?: null;
+            }
+        }
 
         $validated['is_borrowable'] = filter_var($validated['is_borrowable'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $validated['status'] = 'open';
@@ -276,12 +288,18 @@ class AdminController extends Controller
             'capacity' => 'sometimes|integer|min:1',
             'current_occupancy' => 'sometimes|integer|min:0',
             'status' => 'sometimes|in:open,closed,reserved',
-            'opening_time' => 'sometimes|date_format:H:i',
-            'closing_time' => 'sometimes|date_format:H:i',
-            'lunch_start' => 'sometimes|date_format:H:i',
-            'lunch_end' => 'sometimes|date_format:H:i',
+            'opening_time' => 'nullable|date_format:H:i',
+            'closing_time' => 'nullable|date_format:H:i',
+            'lunch_start' => 'nullable|date_format:H:i',
+            'lunch_end' => 'nullable|date_format:H:i',
             'lunch_mode' => 'sometimes|in:scheduled,disabled',
         ]);
+
+        foreach (['opening_time', 'closing_time', 'lunch_start', 'lunch_end'] as $timeField) {
+            if ($request->has($timeField)) {
+                $validated[$timeField] = $request->input($timeField) ?: null;
+            }
+        }
 
         $capacity = $validated['capacity'] ?? $facility->capacity;
         $currentOccupancy = $validated['current_occupancy'] ?? $facility->current_occupancy;

@@ -284,8 +284,8 @@ Route::middleware(['auth', 'verified', 'admin', 'nocache'])->group(function () {
     Route::delete('/admin/facilities/{id}', [AdminController::class, 'deleteFacility']);
     Route::patch('/admin/facilities/{id}', [AdminController::class, 'updateFacility']);
     Route::post('/admin/assistance-requests/{id}/resolve', [AdminController::class, 'resolveAssistanceRequest'])->name('admin.assistance.resolve');
-    Route::post('/admin/reservations/{id}/approve', [AdminController::class, 'approveReservation']);
-    Route::post('/admin/reservations/{id}/reject', [AdminController::class, 'rejectReservation']);
+    Route::post('/admin/reservations/{id}/approve', [AdminController::class, 'approveReservation'])->name('admin.reservations.approve');
+    Route::post('/admin/reservations/{id}/reject', [AdminController::class, 'rejectReservation'])->name('admin.reservations.reject');
     Route::delete('/admin/reservations/{id}', [AdminController::class, 'deleteReservation']);
     Route::post('/admin/borrowings/{id}/approve', [AdminController::class, 'approveBorrowing'])->name('admin.borrowings.approve');
     Route::post('/admin/borrowings/{id}/approve-return', [AdminController::class, 'approveReturnRequest'])->name('admin.borrowings.approve_return');

@@ -577,28 +577,6 @@
                                     <p class="mt-2 text-sm text-slate-600">Facility data will appear here once the admin creates them.</p>
                                 </div>
                             @endforelse
-
-                            <div class="rounded-[24px] bg-white/90 p-5 shadow-[0_18px_46px_rgba(63,31,122,0.12)] ring-1 ring-white/80">
-                                <p class="text-[0.68rem] font-bold uppercase tracking-[0.28em] text-violet-700">Quick Overview</p>
-                                <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                                    <div class="rounded-[20px] bg-violet-50/80 p-4">
-                                        <p class="text-2xl font-bold text-slate-900">{{ $facilities->count() }}</p>
-                                        <p class="mt-1 text-sm text-slate-600">Facilities</p>
-                                    </div>
-                                    <div class="rounded-[20px] bg-violet-50/80 p-4">
-                                        <p class="text-2xl font-bold text-slate-900">{{ $activeReservations->count() }}</p>
-                                        <p class="mt-1 text-sm text-slate-600">Active reservations</p>
-                                    </div>
-                                    <div class="rounded-[20px] bg-violet-50/80 p-4">
-                                        <p class="text-2xl font-bold text-slate-900">{{ $borrowedEquipment->count() }}</p>
-                                        <p class="mt-1 text-sm text-slate-600">Borrowed items</p>
-                                    </div>
-                                    <div class="rounded-[20px] bg-violet-50/80 p-4">
-                                        <p class="text-2xl font-bold text-slate-900">{{ $conflictAlerts->count() }}</p>
-                                        <p class="mt-1 text-sm text-slate-600">Conflict alerts</p>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </section>
 
@@ -677,30 +655,6 @@
                         </div>
                     </section>
 
-                    <section class="mt-6 rounded-[28px] bg-white/90 p-5 shadow-[0_18px_46px_rgba(63,31,122,0.12)] ring-1 ring-white/80 sm:p-6">
-                        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div>
-                                <p class="text-[0.7rem] font-bold uppercase tracking-[0.3em] text-violet-700">Your Calendar</p>
-                                <h3 class="mt-2 text-lg font-bold text-slate-900">Reservation timeline</h3>
-                                <p class="mt-2 max-w-2xl text-sm text-slate-600">Track your upcoming bookings for the current month and see which dates are already reserved.</p>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-3">
-                                <button type="button" id="userCalendarPrevBtn" class="primary-button">Previous</button>
-                                <strong id="userCalendarMonthLabel" class="rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-700">Current month</strong>
-                                <button type="button" id="userCalendarNextBtn" class="primary-button">Next</button>
-                            </div>
-                        </div>
-
-                        <div class="user-calendar-layout mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(280px,1fr)]">
-                            <div>
-                                <div class="calendar-grid" id="userCalendarGrid"></div>
-                            </div>
-                            <div class="user-calendar-summary">
-                                <h4 class="text-base font-bold text-slate-900">Upcoming reservations</h4>
-                                <ul class="mt-3 space-y-3" id="userCalendarSummaryList"></ul>
-                            </div>
-                        </div>
-                    </section>
                 </div>
             </main>
         </div>
@@ -730,130 +684,5 @@
     </div>
 
     <script src="{{ asset('js/dashboard_enhanced.js') }}"></script>
-    @php
-        $userCalendarReservations = $activeReservations->map(function ($reservation) {
-            return [
-                'start' => $reservation->start_time->format('Y-m-d'),
-                'end' => $reservation->end_time->format('Y-m-d'),
-                'facility' => optional($reservation->facility)->room_name ?? 'Facility',
-                'time' => $reservation->start_time->format('H:i') . ' - ' . $reservation->end_time->format('H:i'),
-                'status' => ucfirst($reservation->status),
-            ];
-        })->values();
-    @endphp
-    <script>
-        const userCalendarReservations = @json($userCalendarReservations);
-        const userCalendarGrid = document.getElementById('userCalendarGrid');
-        const userCalendarSummaryList = document.getElementById('userCalendarSummaryList');
-        const userCalendarMonthLabel = document.getElementById('userCalendarMonthLabel');
-        const userCalendarPrevBtn = document.getElementById('userCalendarPrevBtn');
-        const userCalendarNextBtn = document.getElementById('userCalendarNextBtn');
-        let currentUserCalendarDate = new Date();
-
-        function formatMonth(date) {
-            return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-        }
-
-        function getMonthKey(date) {
-            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        }
-
-        function getLocalDateString(date) {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-
-        function isReservedForDate(event, dateString) {
-            return event.start <= dateString && dateString <= event.end;
-        }
-
-        function renderUserCalendar() {
-            const year = currentUserCalendarDate.getFullYear();
-            const month = currentUserCalendarDate.getMonth();
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
-            const monthKey = getMonthKey(currentUserCalendarDate);
-            const monthReservations = (userCalendarReservations || []).filter((reservation) => reservation.start?.slice(0, 7) === monthKey);
-
-            userCalendarMonthLabel.textContent = formatMonth(currentUserCalendarDate);
-            userCalendarGrid.innerHTML = '';
-
-            ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach((label) => {
-                const header = document.createElement('div');
-                header.className = 'day-header';
-                header.textContent = label;
-                userCalendarGrid.appendChild(header);
-            });
-
-            for (let i = 0; i < firstDay.getDay(); i++) {
-                const spacer = document.createElement('div');
-                spacer.className = 'user-calendar-day';
-                spacer.style.visibility = 'hidden';
-                userCalendarGrid.appendChild(spacer);
-            }
-
-            for (let day = 1; day <= lastDay.getDate(); day++) {
-                const date = new Date(year, month, day);
-                const dateString = getLocalDateString(date);
-                const matchingReservations = monthReservations.filter((reservation) => isReservedForDate(reservation, dateString));
-                const cell = document.createElement('div');
-                cell.className = `user-calendar-day ${matchingReservations.length ? 'reserved' : 'available'}`;
-
-                cell.innerHTML = `
-                    <span class="user-calendar-day-number">${day}</span>
-                    ${matchingReservations.length
-                        ? `<span class="user-calendar-tag"><span class="user-calendar-dot"></span>${matchingReservations.length} booking${matchingReservations.length > 1 ? 's' : ''}</span>`
-                        : '<span class="user-calendar-meta">Open</span>'}
-                `;
-
-                if (matchingReservations.length) {
-                    const meta = document.createElement('div');
-                    meta.className = 'user-calendar-meta';
-                    meta.textContent = matchingReservations
-                        .map((reservation) => `${reservation.facility} • ${reservation.time}`)
-                        .join(' | ');
-                    cell.appendChild(meta);
-                }
-
-                userCalendarGrid.appendChild(cell);
-            }
-
-            const todayKey = getLocalDateString(new Date());
-            const summaryItems = monthReservations
-                .filter((reservation) => reservation.start >= todayKey)
-                .sort((a, b) => a.start.localeCompare(b.start))
-                .slice(0, 5);
-
-            if (!summaryItems.length) {
-                userCalendarSummaryList.innerHTML = '<li class="rounded-[16px] bg-violet-50/70 px-4 py-3 text-sm text-slate-600">No reservations are scheduled for this month.</li>';
-                return;
-            }
-
-            userCalendarSummaryList.innerHTML = summaryItems
-                .map((reservation) => `
-                    <li class="user-calendar-summary-item">
-                        <strong>${reservation.facility}</strong>
-                        <span class="user-calendar-meta">${reservation.time}</span><br>
-                        <span class="user-calendar-meta">${reservation.status}</span><br>
-                        <span class="user-calendar-meta">${reservation.start}</span>
-                    </li>
-                `)
-                .join('');
-        }
-
-        userCalendarPrevBtn?.addEventListener('click', () => {
-            currentUserCalendarDate = new Date(currentUserCalendarDate.getFullYear(), currentUserCalendarDate.getMonth() - 1, 1);
-            renderUserCalendar();
-        });
-
-        userCalendarNextBtn?.addEventListener('click', () => {
-            currentUserCalendarDate = new Date(currentUserCalendarDate.getFullYear(), currentUserCalendarDate.getMonth() + 1, 1);
-            renderUserCalendar();
-        });
-
-        renderUserCalendar();
-    </script>
 </body>
 </html>

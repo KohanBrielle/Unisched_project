@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AssistanceRequest;
+use App\Models\AttendanceLog;
 use App\Models\Facility;
 use App\Models\Reservation;
 use App\Models\User;
@@ -154,6 +155,51 @@ class AdminFacilityFlowTest extends TestCase
         $this->assertStringContainsString('lunch', strtolower($facilityState['status_message']));
 
         Carbon::setTestNow();
+    }
+
+    public function test_closed_facilities_reject_scan_requests_and_do_not_create_attendance_logs(): void
+    {
+        $student = User::factory()->create([
+            'email_verified_at' => now(),
+        ]);
+
+        $facility = Facility::create([
+            'room_name' => 'Closed Access Lab',
+            'building' => 'Engineering Wing',
+            'capacity' => 25,
+            'is_borrowable' => false,
+            'current_occupancy' => 0,
+            'status' => 'closed',
+            'status_overridden' => true,
+            'opening_time' => '07:00:00',
+            'closing_time' => '17:00:00',
+            'lunch_start' => '12:00:00',
+            'lunch_end' => '13:00:00',
+            'lunch_mode' => 'scheduled',
+            'operating_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+        ]);
+
+        $response = $this->actingAs($student)
+            ->withSession(['_token' => 'test-token'])
+            ->withHeaders([
+                'X-CSRF-TOKEN' => 'test-token',
+                'X-Requested-With' => 'XMLHttpRequest',
+            ])
+            ->postJson('/facility/scan', [
+                'facility_id' => $facility->id,
+                'qr_data' => json_encode([
+                    'student_id' => $student->student_id,
+                    'user_id' => $student->id,
+                ]),
+            ]);
+
+        $response->assertStatus(400)
+            ->assertJsonFragment([
+                'error' => 'This facility is currently closed and cannot accept scans.',
+            ]);
+
+        $this->assertSame(0, AttendanceLog::count());
+        $this->assertSame(0, $facility->fresh()->current_occupancy);
     }
 
     public function test_admin_overview_calendar_payload_includes_pending_and_approved_reservations(): void

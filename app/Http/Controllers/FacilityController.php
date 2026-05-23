@@ -29,6 +29,12 @@ class FacilityController extends Controller
 
         $facility = Facility::find($request->facility_id);
 
+        if ($facility->computed_status === 'closed') {
+            return response()->json([
+                'error' => 'This facility is currently closed and cannot accept scans.',
+            ], 400);
+        }
+
         $openLog = \App\Models\AttendanceLog::where('user_id', $user->id)
             ->where('facility_id', $facility->id)
             ->whereNull('time_out')
