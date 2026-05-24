@@ -14,103 +14,6 @@ function updateActiveSidebar() {
     });
 }
 
-function setAssistanceVisibility(card, isRequired) {
-    const note = card.querySelector('[data-assistance-note]');
-    const button = card.querySelector('[data-assistance-button]');
-
-    if (!note || !button) {
-        return;
-    }
-
-    note.hidden = !isRequired;
-    button.hidden = !isRequired;
-}
-
-function openAssistanceModal(facilityId, facilityName) {
-    const modal = document.getElementById('assistanceModal');
-    const facilityInput = document.getElementById('assistanceFacilityId');
-    const nameElement = document.getElementById('assistanceFacilityName');
-    const textarea = document.getElementById('assistanceMessage');
-    const feedback = document.getElementById('assistanceFeedback');
-
-    if (!modal || !facilityInput || !nameElement || !textarea || !feedback) {
-        return;
-    }
-
-    facilityInput.value = facilityId;
-    nameElement.textContent = facilityName;
-    textarea.value = '';
-    feedback.textContent = '';
-    modal.hidden = false;
-    textarea.focus();
-}
-
-function closeAssistanceModal() {
-    const modal = document.getElementById('assistanceModal');
-
-    if (!modal) {
-        return;
-    }
-
-    modal.hidden = true;
-}
-
-async function submitAssistance(event) {
-    event.preventDefault();
-
-    const form = event.target;
-    const facilityId = document.getElementById('assistanceFacilityId')?.value;
-    const message = document.getElementById('assistanceMessage')?.value.trim();
-    const feedback = document.getElementById('assistanceFeedback');
-    const submitButton = form.querySelector('button[type="submit"]');
-
-    if (!facilityId || !message || !feedback) {
-        return;
-    }
-
-    if (!message) {
-        feedback.textContent = 'Please describe what you need help with.';
-        return;
-    }
-
-    if (submitButton) {
-        submitButton.disabled = true;
-    }
-
-    try {
-        const response = await fetch('/facility/assistance', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({
-                facility_id: facilityId,
-                message
-            })
-        });
-
-        const data = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-            throw new Error(data.error || data.message || 'Unable to submit assistance request');
-        }
-
-        feedback.textContent = data.message || 'Assistance request submitted successfully';
-
-        window.setTimeout(() => {
-            closeAssistanceModal();
-        }, 1200);
-    } catch (error) {
-        feedback.textContent = error.message || 'Unable to submit assistance request';
-
-        if (submitButton) {
-            submitButton.disabled = false;
-        }
-    }
-}
-
 function updateProgressCircles() {
     const circles = document.querySelectorAll('.progress-circle');
 
@@ -125,67 +28,96 @@ function updateProgressCircles() {
     });
 }
 
-async function refreshFacilityStatus() {
-    const response = await fetch('/api/facilities/status', {
-        headers: { 'Accept': 'application/json' }
-    });
+let facilityRefreshTimer = null;
 
-    if (!response.ok) {
-        return;
+function scheduleFacilityRefresh(delayMs) {
+    if (facilityRefreshTimer) {
+        clearTimeout(facilityRefreshTimer);
     }
 
-    const payload = await response.json();
+    facilityRefreshTimer = setTimeout(refreshFacilityStatus, Math.max(1000, delayMs || 5000));
+}
 
-    payload.facilities?.forEach((facility) => {
-        const card = document.querySelector(`.status-card[data-facility-id="${facility.id}"]`);
+async function refreshFacilityStatus() {
+    try {
+        const response = await fetch('/api/facilities/status', {
+            headers: { 'Accept': 'application/json' }
+        });
 
-        if (!card) {
+        if (!response.ok) {
+            scheduleFacilityRefresh(5000);
             return;
         }
 
-        const chip = card.querySelector('.status-chip');
-        const message = card.querySelector('[data-status-message]');
-        const occupancy = card.querySelector('[data-occupancy]');
-        const percentageLabel = card.querySelector('[data-percent-label]');
-        const progress = card.querySelector('.progress-circle');
+        const payload = await response.json();
+        const nextTransitions = [];
 
-        if (!chip || !message || !occupancy || !percentageLabel || !progress) {
-            return;
-        }
+        payload.facilities?.forEach((facility) => {
+            const card = document.querySelector(`[data-facility-id="${facility.id}"]`);
 
-        card.classList.remove('status-card-open', 'status-card-lunch', 'status-card-closed', 'status-card-occupied');
-        card.classList.add(
-            facility.computed_status === 'closed'
-                ? 'status-card-closed'
-                : facility.computed_status === 'lunch_break'
-                    ? 'status-card-lunch'
-                    : ['reserved', 'in_use'].includes(facility.computed_status)
-                        ? 'status-card-occupied'
-                        : 'status-card-open'
-        );
+            if (!card) {
+                return;
+            }
 
-        chip.className = 'status-chip status-' + facility.computed_status;
-        chip.textContent = facility.status_label;
-        message.textContent = facility.status_message;
-        occupancy.textContent = facility.current_occupancy;
-        percentageLabel.textContent = facility.percent + '%';
-        progress.setAttribute('data-percent', facility.percent);
-        setAssistanceVisibility(card, Boolean(facility.assistance_required));
+            const chip = card.querySelector('.status-chip');
+            const message = card.querySelector('[data-status-message]');
+            const occupancy = card.querySelector('[data-occupancy]');
+            const percentageLabel = card.querySelector('[data-percent-label]');
+            const progress = card.querySelector('.progress-circle');
+            const assistNote = card.querySelector('[data-assistance-note]');
+            const assistButton = card.querySelector('[data-assistance-button]');
+            const shouldRequireAssistance = facility.assistance_required === true;
+
+            card.classList.remove('status-card-open', 'status-card-lunch', 'status-card-closed', 'status-card-occupied');
+            card.classList.add(
+                facility.computed_status === 'closed'
+                    ? 'status-card-closed'
+                    : facility.computed_status === 'lunch_break'
+                        ? 'status-card-lunch'
+                        : facility.computed_status === 'open'
+                            ? 'status-card-open'
+                            : 'status-card-occupied'
+            );
+
+            card.dataset.assistanceRequired = shouldRequireAssistance ? '1' : '0';
+            chip.className = 'status-chip status-' + facility.computed_status;
+            chip.textContent = facility.status_label;
+            message.textContent = facility.status_message;
+            occupancy.textContent = facility.current_occupancy;
+            percentageLabel.textContent = facility.percent + '%';
+            progress.setAttribute('data-percent', facility.percent);
+
+            if (shouldRequireAssistance) {
+                assistNote.removeAttribute('hidden');
+                assistButton.removeAttribute('hidden');
+            } else {
+                assistNote.setAttribute('hidden', '');
+                assistButton.setAttribute('hidden', '');
+            }
+
+            if (facility.next_transition_at) {
+                nextTransitions.push(new Date(facility.next_transition_at).getTime());
+            }
+        });
+
         updateProgressCircles();
-    });
+
+        if (nextTransitions.length > 0) {
+            const nextRefreshMs = Math.min(...nextTransitions) - Date.now() + 1000;
+            scheduleFacilityRefresh(nextRefreshMs);
+        } else {
+            scheduleFacilityRefresh(5000);
+        }
+    } catch (error) {
+        console.error('Failed to refresh facility status:', error);
+        scheduleFacilityRefresh(5000);
+    }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
     updateActiveSidebar();
     updateProgressCircles();
     refreshFacilityStatus();
-    setInterval(refreshFacilityStatus, 30000);
-
-    const assistanceForm = document.getElementById('assistanceForm');
-
-    if (assistanceForm) {
-        assistanceForm.addEventListener('submit', submitAssistance);
-    }
 });
 
 function cancelReservation(reservationId) {

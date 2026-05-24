@@ -339,7 +339,7 @@ class AdminController extends Controller
             );
         }
 
-        if (array_key_exists('status', $validated)) {
+        if (array_key_exists('status', $validated) && $validated['status'] !== $facility->status) {
             $validated['status_overridden'] = true;
         }
 

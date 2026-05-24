@@ -10,6 +10,13 @@ class AuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+    }
+
     public function test_login_screen_can_be_rendered(): void
     {
         $response = $this->get('/login');
@@ -40,6 +47,28 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertGuest();
+    }
+
+    public function test_authenticated_users_can_access_their_dashboard_when_email_is_verified(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get('/dashboard');
+
+        $response->assertOk();
+        $response->assertSee('UNISched');
+    }
+
+    public function test_admins_can_access_the_admin_dashboard_when_email_is_verified(): void
+    {
+        $admin = User::factory()->create([
+            'is_admin' => true,
+        ]);
+
+        $response = $this->actingAs($admin)->get('/system-admin');
+
+        $response->assertOk();
+        $response->assertSee('Facility Management');
     }
 
     public function test_users_can_logout(): void

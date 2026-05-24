@@ -1220,9 +1220,11 @@
         });
 
         let currentEditFacilityId = null;
+        let editStatusDirty = false;
 
         function openEditFacilityModal(button) {
             currentEditFacilityId = button.dataset.facilityId;
+            editStatusDirty = false;
             document.getElementById('editFacilityId').value = currentEditFacilityId;
             document.getElementById('editRoomName').value = button.dataset.roomName || '';
             document.getElementById('editBuilding').value = button.dataset.building || '';
@@ -1243,7 +1245,12 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
             currentEditFacilityId = null;
+            editStatusDirty = false;
         }
+
+        document.getElementById('editStatus').addEventListener('change', () => {
+            editStatusDirty = true;
+        });
 
         document.getElementById('editFacilityForm').addEventListener('submit', async function (event) {
             event.preventDefault();
@@ -1262,8 +1269,11 @@
                 lunch_start: document.getElementById('editLunchStart').value,
                 lunch_end: document.getElementById('editLunchEnd').value,
                 lunch_mode: document.getElementById('editLunchMode').value,
-                status: document.getElementById('editStatus').value
             };
+
+            if (editStatusDirty) {
+                payload.status = document.getElementById('editStatus').value;
+            }
 
             try {
                 const data = await apiRequest('/admin/facilities/' + currentEditFacilityId, {

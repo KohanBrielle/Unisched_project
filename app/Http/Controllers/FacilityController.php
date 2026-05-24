@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AssistanceRequest;
 use App\Models\Facility;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -84,6 +85,7 @@ class FacilityController extends Controller
                     'status_message' => $facility->status_message,
                     'assistance_required' => $facility->assistance_required,
                     'is_borrowable' => (bool) $facility->is_borrowable,
+                    'next_transition_at' => $this->nextTransitionAt($facility),
                 ];
             });
 
@@ -91,6 +93,97 @@ class FacilityController extends Controller
             'facilities' => $facilities,
             'updated_at' => now()->toIso8601String(),
         ]);
+    }
+
+    protected function nextTransitionAt(Facility $facility): ?string
+    {
+        if ($facility->status_overridden) {
+            return null;
+        }
+
+        $now = now();
+        $opening = $this->parseTimeValue($facility->opening_time);
+        $closing = $this->parseTimeValue($facility->closing_time);
+        $lunchStart = $this->parseTimeValue($facility->lunch_start);
+        $lunchEnd = $this->parseTimeValue($facility->lunch_end);
+
+        if ($facility->computed_status === 'lunch_break' && $lunchEnd) {
+            return $lunchEnd->toIso8601String();
+        }
+
+        if ($facility->computed_status === 'closed' && $opening) {
+            $nextOpening = $opening->copy();
+
+            if ($nextOpening->lte($now)) {
+                $nextOpening->addDay();
+            }
+
+            return $nextOpening->toIso8601String();
+        }
+
+        $activeReservation = $facility->reservations()
+            ->where('status', 'approved')
+            ->where('start_time', '<=', $now)
+            ->where('end_time', '>', $now)
+            ->orderBy('end_time')
+            ->first();
+
+        if ($facility->computed_status === 'in_use' && $activeReservation) {
+            return $activeReservation->end_time->toIso8601String();
+        }
+
+        $upcomingReservation = $facility->reservations()
+            ->where('status', 'approved')
+            ->where('start_time', '>', $now)
+            ->orderBy('start_time')
+            ->first();
+
+        if ($facility->computed_status === 'reserved' && $upcomingReservation) {
+            return $upcomingReservation->start_time->toIso8601String();
+        }
+
+        $nextTransition = null;
+
+        foreach ([$lunchStart, $closing, $opening] as $candidate) {
+            if (! $candidate) {
+                continue;
+            }
+
+            if ($candidate->lte($now)) {
+                continue;
+            }
+
+            if ($nextTransition === null || $candidate->lt($nextTransition)) {
+                $nextTransition = $candidate;
+            }
+        }
+
+        if ($nextTransition) {
+            return $nextTransition->toIso8601String();
+        }
+
+        if ($upcomingReservation) {
+            return $upcomingReservation->start_time->toIso8601String();
+        }
+
+        if ($activeReservation) {
+            return $activeReservation->end_time->toIso8601String();
+        }
+
+        return null;
+    }
+
+    protected function parseTimeValue(?string $value): ?Carbon
+    {
+        if (! $value) {
+            return null;
+        }
+
+        try {
+            return Carbon::today()->setTimeFromTimeString($value);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     public function submitAssistance(Request $request): JsonResponse

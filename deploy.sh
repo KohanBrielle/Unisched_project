@@ -3,6 +3,9 @@
 # Run migrations
 php artisan migrate --force
 
+# Restore default application data so login accounts exist on fresh deploys
+php artisan db:seed --force
+
 # Optional: Cache configuration for speed
 php artisan config:cache
 php artisan route:cache

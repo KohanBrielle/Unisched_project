@@ -214,6 +214,62 @@ class AdminFacilityFlowTest extends TestCase
         ]);
     }
 
+    public function test_updating_facility_times_does_not_override_schedule_based_status(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-05-23 08:58:00'));
+
+        $admin = User::factory()->create([
+            'is_admin' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $facility = Facility::create([
+            'room_name' => 'Lunch Lab',
+            'building' => 'Engineering Wing',
+            'capacity' => 20,
+            'is_borrowable' => false,
+            'current_occupancy' => 0,
+            'status' => 'open',
+            'status_overridden' => false,
+            'opening_time' => '07:00:00',
+            'closing_time' => '17:00:00',
+            'lunch_start' => '12:00:00',
+            'lunch_end' => '13:00:00',
+            'lunch_mode' => 'scheduled',
+            'operating_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->withSession(['_token' => 'test-token'])
+            ->withHeaders([
+                'X-CSRF-TOKEN' => 'test-token',
+                'X-Requested-With' => 'XMLHttpRequest',
+            ])
+            ->patchJson('/admin/facilities/' . $facility->id, [
+                'room_name' => 'Lunch Lab',
+                'building' => 'Engineering Wing',
+                'capacity' => 20,
+                'current_occupancy' => 0,
+                'opening_time' => '07:00:00',
+                'closing_time' => '17:00:00',
+                'lunch_start' => '08:58:00',
+                'lunch_end' => '09:08:00',
+                'lunch_mode' => 'scheduled',
+                'status' => 'open',
+            ]);
+
+        $response->assertSuccessful();
+
+        $facility->refresh();
+
+        $this->assertFalse($facility->status_overridden);
+        $this->assertTrue(str_starts_with($facility->lunch_start, '08:58'));
+        $this->assertTrue(str_starts_with($facility->lunch_end, '09:08'));
+        $this->assertSame('lunch_break', $facility->computed_status);
+
+        Carbon::setTestNow();
+    }
+
     public function test_students_can_submit_an_assistance_request_for_a_closed_facility(): void
     {
         $student = User::factory()->create([
@@ -343,6 +399,7 @@ class AdminFacilityFlowTest extends TestCase
 
         $this->assertNotNull($facilityState);
         $this->assertSame('lunch_break', $facilityState['computed_status']);
+        $this->assertNotNull($facilityState['next_transition_at']);
         $this->assertTrue($facilityState['assistance_required']);
         $this->assertStringContainsString('lunch', strtolower($facilityState['status_message']));
 
