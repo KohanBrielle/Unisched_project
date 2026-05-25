@@ -190,3 +190,104 @@ function returnEquipment(borrowingId) {
             alert(error.message || 'An error occurred while returning the equipment.');
         });
 }
+
+function openAssistanceModal(facilityId, facilityName) {
+    const modal = document.getElementById('assistanceModal');
+    const facilityIdInput = document.getElementById('assistanceFacilityId');
+    const facilityNameOutput = document.getElementById('assistanceFacilityName');
+    const feedback = document.getElementById('assistanceFeedback');
+    const messageField = document.getElementById('assistanceMessage');
+
+    if (!modal || !facilityIdInput || !facilityNameOutput || !feedback || !messageField) {
+        return;
+    }
+
+    facilityIdInput.value = facilityId;
+    facilityNameOutput.textContent = facilityName || 'this facility';
+    feedback.textContent = '';
+    messageField.value = '';
+    modal.removeAttribute('hidden');
+}
+
+function closeAssistanceModal() {
+    const modal = document.getElementById('assistanceModal');
+    const feedback = document.getElementById('assistanceFeedback');
+    const messageField = document.getElementById('assistanceMessage');
+
+    if (!modal) {
+        return;
+    }
+
+    modal.setAttribute('hidden', '');
+
+    if (feedback) {
+        feedback.textContent = '';
+    }
+
+    if (messageField) {
+        messageField.value = '';
+    }
+}
+
+function submitAssistanceRequest(event) {
+    event.preventDefault();
+
+    const form = document.getElementById('assistanceForm');
+    const facilityIdInput = document.getElementById('assistanceFacilityId');
+    const feedback = document.getElementById('assistanceFeedback');
+    const messageField = document.getElementById('assistanceMessage');
+
+    if (!form || !facilityIdInput || !feedback || !messageField) {
+        return;
+    }
+
+    const message = messageField.value.trim();
+
+    if (!message) {
+        feedback.textContent = 'Please enter a short message describing what you need.';
+        return;
+    }
+
+    feedback.textContent = 'Sending request...';
+
+    fetch('/facility/assistance', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            facility_id: facilityIdInput.value,
+            message: message
+        })
+    })
+        .then(async (response) => {
+            const payload = await response.json().catch(() => null);
+
+            if (!response.ok) {
+                throw new Error(payload?.message || payload?.error || 'Unable to submit assistance request.');
+            }
+
+            return payload;
+        })
+        .then((data) => {
+            feedback.textContent = data?.message || 'Assistance request submitted successfully.';
+            messageField.value = '';
+
+            window.setTimeout(() => {
+                closeAssistanceModal();
+            }, 1200);
+        })
+        .catch((error) => {
+            feedback.textContent = error.message || 'Unable to submit assistance request.';
+        });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const assistanceForm = document.getElementById('assistanceForm');
+
+    if (assistanceForm) {
+        assistanceForm.addEventListener('submit', submitAssistanceRequest);
+    }
+});
